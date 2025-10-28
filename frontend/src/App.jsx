@@ -4,12 +4,14 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import UserProfile from './pages/UserProfile';
 import AdminUsers from './pages/AdminUsers';
-import InspectionDetails from './pages/InspectionDetails';
 import ValidationQueue from './pages/ValidationQueue';
 import Layout from './components/Layout';
-import Inspections from './pages/Inspections';
-import Pieces from './pages/Pieces';
-import PieceHistory from './pages/PieceHistory';
+import Systems from './pages/Systems';
+import SystemDetails from './pages/SystemDetails';
+import Machines from './pages/Machines';
+import MachineDetails from './pages/MachineDetails';
+import Workers from './pages/Workers';
+import WorkerDetails from './pages/WorkerDetails';
 
 function App() {
   // Initialize from localStorage if present
@@ -87,14 +89,6 @@ function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="/inspections/:id" element={
-          <ProtectedRoute>
-            <Layout userRole={userRole} key={userRole}>
-              <InspectionDetails />
-            </Layout>
-          </ProtectedRoute>
-        } />
-
         <Route path="/validation-queue" element={
           <ProtectedRoute allowedRoles={['chief', 'admin']}>
             <Layout userRole={userRole} key={userRole}>
@@ -103,26 +97,50 @@ function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="/inspections" element={
+        <Route path="/systems" element={
           <ProtectedRoute>
             <Layout userRole={userRole} key={userRole}>
-              <Inspections />
+              <Systems />
             </Layout>
           </ProtectedRoute>
         } />
 
-        <Route path="/pieces" element={
+        <Route path="/systems/:id" element={
           <ProtectedRoute>
             <Layout userRole={userRole} key={userRole}>
-              <Pieces />
+              <SystemDetails />
             </Layout>
           </ProtectedRoute>
         } />
 
-        <Route path="/pieces/:ref" element={
+        <Route path="/machines" element={
           <ProtectedRoute>
             <Layout userRole={userRole} key={userRole}>
-              <PieceHistory />
+              <Machines />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/machines/:id" element={
+          <ProtectedRoute>
+            <Layout userRole={userRole} key={userRole}>
+              <MachineDetails />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/workers" element={
+          <ProtectedRoute>
+            <Layout userRole={userRole} key={userRole}>
+              <Workers />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/workers/:id" element={
+          <ProtectedRoute>
+            <Layout userRole={userRole} key={userRole}>
+              <WorkerDetails />
             </Layout>
           </ProtectedRoute>
         } />

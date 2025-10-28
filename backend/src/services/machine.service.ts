@@ -19,11 +19,12 @@ export const createMachine = async (data: any, userId: any) => {
       os_machine: data.os_machine,
       version_machine: data.version_machine,
       description_machine: data.description_machine,
+      url_metrics_machine: data.url_metrics_machine,
       creation_date: new Date(),
       user_creation: userId ? parseInt(userId) : undefined,
       modification_date: new Date(),
       user_modification: userId ? parseInt(userId) : undefined,
-    },
+    } as any,
   });
   return created;
 };
@@ -37,9 +38,10 @@ export const updateMachine = async (id: any, data: any, userId: any) => {
       os_machine: data.os_machine,
       version_machine: data.version_machine,
       description_machine: data.description_machine,
+      url_metrics_machine: data.url_metrics_machine,
       modification_date: new Date(),
       user_modification: userId ? parseInt(userId) : undefined,
-    },
+    } as any,
   });
   return updated;
 };

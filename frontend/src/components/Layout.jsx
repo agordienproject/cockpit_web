@@ -24,9 +24,9 @@ export default function Layout({ children, userRole }) {
   console.log(`User role: ${userRole}`);
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-    { name: 'Inspections', href: '/inspections', icon: ClipboardDocumentCheckIcon },
-    { name: 'Pieces', href: '/pieces', icon: ClipboardDocumentCheckIcon },
+    { name: 'Systems', href: '/systems', icon: HomeIcon },
+    { name: 'Machines', href: '/machines', icon: ClipboardDocumentCheckIcon },
+    { name: 'Workers', href: '/workers', icon: ClipboardDocumentCheckIcon },
     { name: 'Profile', href: '/profile', icon: UserIcon },
     ...(userRole === 'admin' ? [
       { name: 'Manage Users', href: '/admin/users', icon: UsersIcon }

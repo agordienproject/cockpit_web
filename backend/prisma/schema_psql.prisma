@@ -17,6 +17,7 @@ model DIM_MACHINE {
   os_machine          String?   @db.VarChar(120)
   version_machine     String?   @db.VarChar(120)
   description_machine String?
+  url_metrics_machine String?   @db.VarChar(255)
   deleted             Boolean?  @default(false)
   creation_date       DateTime? @db.Timestamp(6)
   user_creation       BigInt?

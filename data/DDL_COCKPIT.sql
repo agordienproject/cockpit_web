@@ -100,6 +100,7 @@ CREATE TABLE "DIM_MACHINE" (
   "os_machine"          VARCHAR(120),
   "version_machine"     VARCHAR(120),
   "description_machine" TEXT,
+  "url_metrics_machine" VARCHAR(255),
   "deleted"             BOOLEAN DEFAULT FALSE,
   "creation_date"       TIMESTAMP,
   "user_creation"       BIGINT,
@@ -114,6 +115,7 @@ COMMENT ON COLUMN "DIM_MACHINE"."id_type_machine"       IS 'ID du type de la mac
 COMMENT ON COLUMN "DIM_MACHINE"."os_machine"            IS 'Système d exploitation de la machine (Windows, Linux etc...)';
 COMMENT ON COLUMN "DIM_MACHINE"."version_machine"       IS 'Version de la machine (Windows 11, Linux Debian 12 etc...)';
 COMMENT ON COLUMN "DIM_MACHINE"."description_machine"   IS 'Description de la machine';
+COMMENT ON COLUMN "DIM_MACHINE"."url_metrics_machine"   IS 'URL des métriques de la machine (Ex: http://ip_machine:19999/api/v3/)';
 COMMENT ON COLUMN "DIM_MACHINE"."deleted"               IS 'True si la machine est supprimée';
 COMMENT ON COLUMN "DIM_MACHINE"."creation_date"         IS 'Date de création de la ligne';
 COMMENT ON COLUMN "DIM_MACHINE"."user_creation"         IS 'Utilisateur qui a créé la ligne';
