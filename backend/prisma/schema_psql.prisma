@@ -1,0 +1,107 @@
+generator client_psql {
+  provider        = "prisma-client-js"
+  output          = "./generated/postgresql"
+  previewFeatures = ["views"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_PSQL")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model DIM_MACHINE {
+  id_machine          BigInt    @id @default(autoincrement())
+  name_machine        String?   @db.VarChar(120)
+  id_type_machine     BigInt?
+  os_machine          String?   @db.VarChar(120)
+  version_machine     String?   @db.VarChar(120)
+  description_machine String?
+  deleted             Boolean?  @default(false)
+  creation_date       DateTime? @db.Timestamp(6)
+  user_creation       BigInt?
+  modification_date   DateTime? @db.Timestamp(6)
+  user_modification   BigInt?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model DIM_SYSTEM {
+  id_sys            BigInt    @id @default(autoincrement())
+  name_sys          String?   @db.VarChar(120)
+  version_sys       String?   @db.VarChar(120)
+  id_type_sys       BigInt?
+  description_sys   String?
+  id_service_sys    BigInt?
+  id_machine_sys    BigInt?
+  deleted           Boolean?  @default(false)
+  creation_date     DateTime? @db.Timestamp(6)
+  user_creation     BigInt?
+  modification_date DateTime? @db.Timestamp(6)
+  user_modification BigInt?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model DIM_TYPE_MACHINE {
+  id_type_machine          BigInt    @id @default(autoincrement())
+  name_type_machine        String?   @db.VarChar(120)
+  description_type_machine String?
+  deleted                  Boolean?  @default(false)
+  creation_date            DateTime? @db.Timestamp(6)
+  user_creation            BigInt?
+  modification_date        DateTime? @db.Timestamp(6)
+  user_modification        BigInt?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model DIM_TYPE_SYSTEM {
+  id_type_sys          BigInt    @id @default(autoincrement())
+  name_type_sys        String?   @db.VarChar(120)
+  description_type_sys String?
+  deleted              Boolean?  @default(false)
+  creation_date        DateTime? @db.Timestamp(6)
+  user_creation        BigInt?
+  modification_date    DateTime? @db.Timestamp(6)
+  user_modification    BigInt?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model DIM_USER {
+  id_user    BigInt   @id @default(autoincrement())
+  first_name String?  @db.VarChar(120)
+  last_name  String?  @db.VarChar(120)
+  pseudo     String?  @db.VarChar(120)
+  email      String?  @db.VarChar(120)
+  password   String?  @db.VarChar(255)
+  role       String?  @db.VarChar(120)
+  service    String?  @db.VarChar(120)
+  deleted    Boolean? @default(false)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model DIM_WORKER {
+  id_worker          BigInt    @id @default(autoincrement())
+  name_worker        String?   @db.VarChar(120)
+  id_sys             BigInt?
+  id_machine         BigInt?
+  description_worker String?
+  creds_worker       String?   @db.VarChar(255)
+  deleted            Boolean?  @default(false)
+  creation_date      DateTime? @db.Timestamp(6)
+  user_creation      BigInt?
+  modification_date  DateTime? @db.Timestamp(6)
+  user_modification  BigInt?
+}
+
+model FCT_VERIF_SYSTEM {
+  id_verif          BigInt    @id @default(autoincrement())
+  id_worker         BigInt?
+  id_sys            BigInt?
+  id_machine        BigInt?
+  status            String?   @db.VarChar(120)
+  details           String?
+  deleted           Boolean?  @default(false)
+  creation_date     DateTime? @db.Timestamp(6)
+  user_creation     BigInt?
+  modification_date DateTime? @db.Timestamp(6)
+  user_modification BigInt?
+}

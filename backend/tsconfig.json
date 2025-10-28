@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "target": "ES2020", // Ou une version que tu préfères
+        "module": "CommonJS", // Utilise CommonJS pour la compatibilité avec Node.js
+        "moduleResolution": "node", // Résolution de module comme Node.js
+        "esModuleInterop": true, // Permet l'importation d'ESModules avec Node.js
+        "skipLibCheck": true, // Option pour accélérer la compilation
+        "forceConsistentCasingInFileNames": true,
+        "outDir": "./dist", // Dossier où les fichiers compilés seront sortis
+        "rootDir": "./src", // Dossier source du projet
+        "resolveJsonModule": true // Pour permettre d'importer des fichiers JSON si nécessaire
+    },
+    "include": [
+        "src/**/*.ts"
+    ], // Inclure tous les fichiers .ts du dossier src
+    "exclude": [
+        "node_modules"
+    ] // Exclure node_modules pour la compilation
+}

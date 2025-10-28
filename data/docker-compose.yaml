@@ -1,0 +1,15 @@
+services:
+  postgres_db_lab:
+    image: postgres:15
+    container_name: postgres_db_lab
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: cockpit_nap
+    restart: always
+    ports:
+    - 5432:5432
+    volumes:
+    - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata: null
