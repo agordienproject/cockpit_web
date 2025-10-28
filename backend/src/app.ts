@@ -5,6 +5,7 @@ import userRoutes from "./routes/user.routes";
 import machineRoutes from "./routes/machine.routes";
 import systemRoutes from "./routes/system.routes";
 import verifRoutes from "./routes/verif.routes";
+import workerRoutes from "./routes/worker.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import cors from "cors";
 
@@ -28,6 +29,7 @@ app.use("/api/machines", machineRoutes);
 app.use("/api/systems", systemRoutes);
 app.use("/api/verifications", verifRoutes);
 app.use("/api/dashboards", dashboardRoutes);
+app.use("/api/workers", workerRoutes);
 
 app.use("/api", (req, res) => {
   console.log(`API Request: ${req.method} ${req.originalUrl}`);

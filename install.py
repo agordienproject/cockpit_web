@@ -254,75 +254,115 @@ def main():
     ddl_inspection_path = data_dir / "DDL_COCKPIT.sql"
     users_csv_path = data_dir / "example_data" / "user.csv"
 
-    # 1) Collect inputs
+    # Ask which installation to perform: complete (DB + WEB), web only, or db only.
     print("=== AUAS Web Lab Setup ===")
-    ip_addr = prompt_with_default("Enter the IP address of this device", default="localhost")
-    db_user = prompt_with_default("PostgreSQL user", default="postgres")
-    db_password = prompt_with_default("PostgreSQL password", default="admin", secret=True)
-    db_name = prompt_with_default("PostgreSQL database name", default="lab_inspection")
-    host_port_str = prompt_with_default("Host port to expose PostgreSQL (maps to container 5432)", default="5432")
-    try:
-        host_port = int(host_port_str)
-    except ValueError as exc:
-        raise SystemExit("Host port must be a number, e.g., 5432") from exc
+    print("Choose installation mode:")
+    print("  1) complete  - Install both Database (Docker) and Web (backend+frontend)")
+    print("  2) web       - Install only Web (backend + frontend)")
+    print("  3) db        - Install only Database (Docker + data)")
 
-    # 2) Update docker-compose
-    update_docker_compose(compose_path, db_user, db_password, db_name, host_port)
+    choice = None
+    valid_map = {"1": "complete", "2": "web", "3": "db", "complete": "complete", "web": "web", "db": "db"}
+    while choice not in valid_map:
+        raw = input("Select option [1/2/3] (default 1): ").strip() or "1"
+        val = valid_map.get(raw.lower())
+        if val:
+            choice = val
+        else:
+            print("Invalid choice. Please enter 1, 2 or 3 (or 'complete','web','db').")
 
-    # 3) Start Docker Compose
-    # 3) Start Docker Compose under the 'database' stack. If you want to clean up old services, set remove_orphans=True.
-    docker_compose_up(compose_path, project_name="database", remove_orphans=False)
+    install_db = choice in ("complete", "db")
+    install_web = choice in ("complete", "web")
 
-    # 4) Wait for DB
-    wait_for_db(ip_addr, host_port, db_user, db_password, db_name, timeout=150)
+    # Collect DB-related inputs if either DB or WEB needs DB info
+    ip_addr = None
+    db_user = db_password = db_name = None
+    host_port = None
+    if install_db or install_web:
+        ip_addr = prompt_with_default("Enter the IP address of this device", default="localhost")
+        db_user = prompt_with_default("PostgreSQL user", default="postgres")
+        db_password = prompt_with_default("PostgreSQL password", default="admin", secret=True)
+        db_name = prompt_with_default("PostgreSQL database name", default="lab_inspection")
+        host_port_str = prompt_with_default("Host port to expose PostgreSQL (maps to container 5432)", default="5432")
+        try:
+            host_port = int(host_port_str)
+        except ValueError as exc:
+            raise SystemExit("Host port must be a number, e.g., 5432") from exc
 
-    # 5) Apply DDLs
-    apply_sql_file(ddl_inspection_path, ip_addr, host_port, db_user, db_password, db_name)
+    # If DB installation requested, run DB steps
+    if install_db:
+        # 2) Update docker-compose
+        update_docker_compose(compose_path, db_user, db_password, db_name, host_port)
 
-    # 6) Seed users from CSV
-    import_users_from_csv(users_csv_path, ip_addr, host_port, db_user, db_password, db_name)
+        # 3) Start Docker Compose under the 'database' stack.
+        docker_compose_up(compose_path, project_name="database", remove_orphans=False)
 
-    # 7) Backend setup
-    backend_env_tmpl = backend_dir / ".env_template"
-    backend_env = backend_dir / ".env"
-    # Construct DB URL for backend
-    db_url = f"postgresql://{db_user}:{db_password}@{ip_addr}:{host_port}/{db_name}?schema=public"
-    backend_replacements = {
-        "GLOBAL_IP": ip_addr,
-        "DATABASE_URL_PSQL": db_url,
-        "FRONTEND_URL": f"http://{ip_addr}:4000",
-        "FTP_HOST": ip_addr,
-    }
-    write_env_file_from_template(backend_env_tmpl, backend_env, backend_replacements)
+        # 4) Wait for DB
+        wait_for_db(ip_addr, host_port, db_user, db_password, db_name, timeout=150)
 
-    print("→ Installing backend dependencies (npm install)…")
-    npm_cmd = resolve_command(["npm", "npm.cmd", "npm.exe"])  # Robust Windows support
-    run_command(npm_cmd + ["install"], cwd=backend_dir, check=True)
+        # 5) Apply DDLs
+        apply_sql_file(ddl_inspection_path, ip_addr, host_port, db_user, db_password, db_name)
 
-    print("→ Prisma: pulling DB schema…")
-    npx_cmd = resolve_command(["npx", "npx.cmd", "npx.exe"])  # Robust Windows support
-    run_command(npx_cmd + ["prisma", "db", "pull", "--schema=./prisma/schema_psql.prisma"], cwd=backend_dir, check=True)
+        # 6) Seed users from CSV
+        import_users_from_csv(users_csv_path, ip_addr, host_port, db_user, db_password, db_name)
 
-    print("→ Prisma: generating client…")
-    run_command(npx_cmd + ["prisma", "generate", "--schema=./prisma/schema_psql.prisma"], cwd=backend_dir, check=True)
+    # If WEB installation requested, run backend + frontend steps
+    if install_web:
+        # Ensure we have DB connection values (either from above or prompt now)
+        if not (ip_addr and db_user and db_password and db_name and host_port):
+            ip_addr = prompt_with_default("Enter the IP address of the database host", default="localhost")
+            db_user = prompt_with_default("PostgreSQL user", default="postgres")
+            db_password = prompt_with_default("PostgreSQL password", default="admin", secret=True)
+            db_name = prompt_with_default("PostgreSQL database name", default="lab_inspection")
+            host_port_str = prompt_with_default("Host port to reach PostgreSQL", default="5432")
+            try:
+                host_port = int(host_port_str)
+            except ValueError as exc:
+                raise SystemExit("Host port must be a number, e.g., 5432") from exc
 
-    # 8) Frontend setup
-    frontend_env_tmpl = frontend_dir / ".env_template"
-    frontend_env = frontend_dir / ".env"
-    frontend_replacements = {
-        "REACT_APP_API_URL": f"http://{ip_addr}:3000",
-        "REACT_APP_API_BASE_URL": f"http://{ip_addr}:3000/api",
-        "HOST": ip_addr if ip_addr != "127.0.0.1" else "0.0.0.0",
-    }
-    write_env_file_from_template(frontend_env_tmpl, frontend_env, frontend_replacements)
+        # 7) Backend setup
+        backend_env_tmpl = backend_dir / ".env_template"
+        backend_env = backend_dir / ".env"
+        # Construct DB URL for backend
+        db_url = f"postgresql://{db_user}:{db_password}@{ip_addr}:{host_port}/{db_name}?schema=public"
+        backend_replacements = {
+            "GLOBAL_IP": ip_addr,
+            "DATABASE_URL_PSQL": db_url,
+            "FRONTEND_URL": f"http://{ip_addr}:4000",
+            "FTP_HOST": ip_addr,
+        }
+        write_env_file_from_template(backend_env_tmpl, backend_env, backend_replacements)
 
-    print("→ Installing frontend dependencies (npm install)…")
-    run_command(npm_cmd + ["install"], cwd=frontend_dir, check=True)
+        print("→ Installing backend dependencies (npm install)…")
+        npm_cmd = resolve_command(["npm", "npm.cmd", "npm.exe"])  # Robust Windows support
+        run_command(npm_cmd + ["install"], cwd=backend_dir, check=True)
+
+        print("→ Prisma: pulling DB schema…")
+        npx_cmd = resolve_command(["npx", "npx.cmd", "npx.exe"])  # Robust Windows support
+        run_command(npx_cmd + ["prisma", "db", "pull", "--schema=./prisma/schema_psql.prisma"], cwd=backend_dir, check=True)
+
+        print("→ Prisma: generating client…")
+        run_command(npx_cmd + ["prisma", "generate", "--schema=./prisma/schema_psql.prisma"], cwd=backend_dir, check=True)
+
+        # 8) Frontend setup
+        frontend_env_tmpl = frontend_dir / ".env_template"
+        frontend_env = frontend_dir / ".env"
+        frontend_replacements = {
+            "REACT_APP_API_URL": f"http://{ip_addr}:3000",
+            "REACT_APP_API_BASE_URL": f"http://{ip_addr}:3000/api",
+            "HOST": ip_addr if ip_addr != "127.0.0.1" else "0.0.0.0",
+        }
+        write_env_file_from_template(frontend_env_tmpl, frontend_env, frontend_replacements)
+
+        print("→ Installing frontend dependencies (npm install)…")
+        run_command(npm_cmd + ["install"], cwd=frontend_dir, check=True)
 
     print("\nSetup completed successfully!")
-    print("- Database running in Docker on port:", host_port)
-    print(f"- Backend .env at {backend_env}")
-    print(f"- Frontend .env at {frontend_env}")
+    if install_db:
+        print("- Database running in Docker on port:", host_port)
+    if install_web:
+        print(f"- Backend .env at {backend_env}")
+        print(f"- Frontend .env at {frontend_env}")
     print("You can now start the backend and frontend using your existing scripts.")
 
 

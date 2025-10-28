@@ -41,30 +41,6 @@ model DIM_SYSTEM {
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model DIM_TYPE_MACHINE {
-  id_type_machine          BigInt    @id @default(autoincrement())
-  name_type_machine        String?   @db.VarChar(120)
-  description_type_machine String?
-  deleted                  Boolean?  @default(false)
-  creation_date            DateTime? @db.Timestamp(6)
-  user_creation            BigInt?
-  modification_date        DateTime? @db.Timestamp(6)
-  user_modification        BigInt?
-}
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model DIM_TYPE_SYSTEM {
-  id_type_sys          BigInt    @id @default(autoincrement())
-  name_type_sys        String?   @db.VarChar(120)
-  description_type_sys String?
-  deleted              Boolean?  @default(false)
-  creation_date        DateTime? @db.Timestamp(6)
-  user_creation        BigInt?
-  modification_date    DateTime? @db.Timestamp(6)
-  user_modification    BigInt?
-}
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model DIM_USER {
   id_user    BigInt   @id @default(autoincrement())
   first_name String?  @db.VarChar(120)
@@ -73,7 +49,7 @@ model DIM_USER {
   email      String?  @db.VarChar(120)
   password   String?  @db.VarChar(255)
   role       String?  @db.VarChar(120)
-  service    String?  @db.VarChar(120)
+  id_service BigInt?
   deleted    Boolean? @default(false)
 }
 
@@ -104,4 +80,40 @@ model FCT_VERIF_SYSTEM {
   user_creation     BigInt?
   modification_date DateTime? @db.Timestamp(6)
   user_modification BigInt?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model REF_SERVICE {
+  id_service          BigInt    @id @default(autoincrement())
+  name_service        String?   @db.VarChar(120)
+  description_service String?
+  deleted             Boolean?  @default(false)
+  creation_date       DateTime? @db.Timestamp(6)
+  user_creation       BigInt?
+  modification_date   DateTime? @db.Timestamp(6)
+  user_modification   BigInt?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model REF_TYPE_MACHINE {
+  id_type_machine          BigInt    @id @default(autoincrement())
+  name_type_machine        String?   @db.VarChar(120)
+  description_type_machine String?
+  deleted                  Boolean?  @default(false)
+  creation_date            DateTime? @db.Timestamp(6)
+  user_creation            BigInt?
+  modification_date        DateTime? @db.Timestamp(6)
+  user_modification        BigInt?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model REF_TYPE_SYSTEM {
+  id_type_sys          BigInt    @id @default(autoincrement())
+  name_type_sys        String?   @db.VarChar(120)
+  description_type_sys String?
+  deleted              Boolean?  @default(false)
+  creation_date        DateTime? @db.Timestamp(6)
+  user_creation        BigInt?
+  modification_date    DateTime? @db.Timestamp(6)
+  user_modification    BigInt?
 }

@@ -18,8 +18,8 @@ router.delete("/:id", verifyRole, userController.deleteUser);                   
 // Endpoints for service routes
 router.get("/services/", serviceController.getAllServicesInfos);                   // Route to get all service informations
 router.get("/services/:id", serviceController.getServiceInfos);                    // Route to get service information by id
-router.post("/services", verifyRole, serviceController.createUser);                // Route to create service
-router.put("/services/:id", verifyRole, serviceController.updateUserProfile);      // Route to update service
-router.delete("/services/:id", verifyRole, serviceController.deleteUser);          // Route to delete service by id
+router.post("/services", verifyRole, serviceController.createServiceInfos);                // Route to create service
+router.put("/services/:id", verifyRole, serviceController.updateServiceInfos);      // Route to update service
+router.delete("/services/:id", verifyRole, serviceController.deleteServiceInfos);          // Route to delete service by id
 
 export default router;

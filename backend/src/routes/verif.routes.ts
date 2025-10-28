@@ -10,8 +10,8 @@ router.use(verifyWorkerCreds);
 router.get("/", verifController.getAllVerifInfos);                      // Route to get all verifications
 router.get("/current", verifController.getAllCurrentVerifInfos);        // Route to get all current verifications
 router.get("/:id", verifController.getVerifInfos);                      // Route to get verification by id
-router.post("/", verifController.createVerifInfos);                     // Route to create verification
-router.put("/:id", verifController.updateVerifInfos);                   // Route to update verification by id
+router.post("/", verifyWorkerCreds, verifController.createVerifInfos);                     // Route to create verification
+router.put("/:id", verifyRole, verifController.updateVerifInfos);                   // Route to update verification by id
 router.delete("/:id", verifyRole, verifController.deleteVerifInfos);    // Route to delete verification by id
 
 export default router;

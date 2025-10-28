@@ -1,0 +1,46 @@
+import { prismaPSQL } from "../prisma/client_psql";
+
+export const getAllServices = async () => {
+  return await prismaPSQL.rEF_SERVICE.findMany({ where: { deleted: false } });
+};
+
+export const getServiceById = async (id: any) => {
+  const svc = await prismaPSQL.rEF_SERVICE.findFirst({ where: { id_service: id, deleted: false } });
+  return svc || null;
+};
+
+export const createService = async (data: any, userId: any) => {
+  const created = await prismaPSQL.rEF_SERVICE.create({
+    data: {
+      name_service: data.name_service,
+      description_service: data.description_service,
+      creation_date: new Date(),
+      user_creation: userId ? parseInt(userId) : undefined,
+      modification_date: new Date(),
+      user_modification: userId ? parseInt(userId) : undefined,
+    },
+  });
+  return created;
+};
+
+export const updateService = async (id: any, data: any, userId: any) => {
+  const updated = await prismaPSQL.rEF_SERVICE.update({
+    where: { id_service: id },
+    data: {
+      name_service: data.name_service,
+      description_service: data.description_service,
+      modification_date: new Date(),
+      user_modification: userId ? parseInt(userId) : undefined,
+    },
+  });
+  return updated;
+};
+
+export const deleteServiceById = async (id: any, userId: any) => {
+  const svc = await prismaPSQL.rEF_SERVICE.findFirst({ where: { id_service: id, deleted: false } });
+  if (!svc) throw new Error('Service not found or already deleted');
+  await prismaPSQL.rEF_SERVICE.update({ where: { id_service: id }, data: { deleted: true, modification_date: new Date(), user_modification: userId ? parseInt(userId) : undefined } });
+  return svc;
+};
+
+export default {};
