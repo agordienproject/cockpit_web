@@ -4,80 +4,29 @@ class DashboardService {
   // Get dashboard overview data
   async getDashboardOverview() {
     try {
-      const response = await api.get('/dashboard/overview');
+      const response = await api.get('/dashboards');
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch dashboard data' };
     }
   }
-
-  // Get inspection statistics
-  async getInspectionStats() {
+  // Get machines list from dashboard (shortcut)
+  async getMachines() {
     try {
-      const response = await api.get('/dashboards/stats');
+      const response = await api.get('/dashboards/machines');
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch inspection stats' };
+      throw error.response?.data || { message: 'Failed to fetch machines' };
     }
   }
 
-  // Get piece current state
-  async getPieceCurrentState() {
+  // Get workers list from dashboard (shortcut)
+  async getWorkers() {
     try {
-      const response = await api.get('/dashboards/pieces');
+      const response = await api.get('/dashboards/workers');
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch piece data' };
-    }
-  }
-
-  // Get inspector performance
-  async getInspectorPerformance() {
-    try {
-      const response = await api.get('/dashboards/inspectors');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch inspector performance' };
-    }
-  }
-
-  // Get daily trends
-  async getDailyTrends() {
-    try {
-      const response = await api.get('/dashboards/trends');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch daily trends' };
-    }
-  }
-
-  // Get piece history summary
-  async getPieceHistorySummary() {
-    try {
-      const response = await api.get('/dashboards/piece-history');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch piece history' };
-    }
-  }
-
-  // Get recent inspections
-  async getRecentInspections() {
-    try {
-      const response = await api.get(`/inspections/recent`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch recent inspections' };
-    }
-  }
-
-  // Get pending validations count
-  async getPendingValidationsCount() {
-    try {
-      const response = await api.get('/dashboards/pending-validations-count');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch pending validations count' };
+      throw error.response?.data || { message: 'Failed to fetch workers' };
     }
   }
 
@@ -99,22 +48,7 @@ class DashboardService {
     return undefined;
   }
 
-  // Get validation time distribution
-  async getValidationTimeDistribution({ from, to, groupBy = 'day' } = {}) {
-    try {
-      const formattedFrom = this.formatDateParam(from);
-      const formattedTo = this.formatDateParam(to);
-      let url = '/dashboards/validation-times?';
-      if (formattedFrom) url += `from=${encodeURIComponent(formattedFrom)}&`;
-      if (formattedTo) url += `to=${encodeURIComponent(formattedTo)}&`;
-      if (groupBy) url += `groupBy=${encodeURIComponent(groupBy)}`;
-      console.log(`Fetching validation time distribution with URL: ${url}`);
-      const response = await api.get(url);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch validation time distribution' };
-    }
-  }
+  // Validation time distribution (removed with inspections)
 }
 
 export default new DashboardService();

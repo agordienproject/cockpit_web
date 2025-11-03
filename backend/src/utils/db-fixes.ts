@@ -15,14 +15,7 @@ export const fixUserIdSequence = async () => {
 };
 
 export const fixInspectionIdSequence = async () => {
-    try {
-        const result = await prismaPSQL.$queryRaw`
-            SELECT setval('"FCT_INSPECTION_id_inspection_seq"', (SELECT MAX(id_inspection) FROM "FCT_INSPECTION"), true);
-        `;
-        console.log("Inspection ID sequence has been reset successfully");
-        return result;
-    } catch (error) {
-        console.error("Error fixing inspection ID sequence:", error);
-        throw error;
-    }
+    // inspections removed — no-op
+    console.log('fixInspectionIdSequence called but inspections have been removed; skipping');
+    return null;
 };

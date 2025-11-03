@@ -81,12 +81,13 @@ def update_docker_compose(compose_path: Path, db_user: str, db_password: str, db
                 svc_name = name
                 break
     if not svc_name:
-        svc_name = "postgres_db_lab"
+        svc_name = "postgres_nap"
     svc = services.setdefault(svc_name, {})
 
     # Ensure required fields for a valid service
     if not svc.get("image"):
-        svc["image"] = "postgres:latest"
+        # Prefer an explicit, supported Postgres major version so installs are reproducible.
+        svc["image"] = "postgres:17"
     svc.setdefault("restart", "always")
 
     env = svc.setdefault("environment", {})
@@ -282,7 +283,7 @@ def main():
         ip_addr = prompt_with_default("Enter the IP address of this device", default="localhost")
         db_user = prompt_with_default("PostgreSQL user", default="postgres")
         db_password = prompt_with_default("PostgreSQL password", default="admin", secret=True)
-        db_name = prompt_with_default("PostgreSQL database name", default="lab_inspection")
+        db_name = prompt_with_default("PostgreSQL database name", default="cockpit_nap")
         host_port_str = prompt_with_default("Host port to expose PostgreSQL (maps to container 5432)", default="5432")
         try:
             host_port = int(host_port_str)

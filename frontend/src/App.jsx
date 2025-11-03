@@ -4,7 +4,11 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import UserProfile from './pages/UserProfile';
 import AdminUsers from './pages/AdminUsers';
-import ValidationQueue from './pages/ValidationQueue';
+import AdminWorkers from './pages/AdminWorkers';
+import AdminMachines from './pages/AdminMachines';
+import AdminSystems from './pages/AdminSystems';
+import AdminReferentials from './pages/AdminReferentials';
+import AdminRefList from './pages/AdminRefList';
 import Layout from './components/Layout';
 import Systems from './pages/Systems';
 import SystemDetails from './pages/SystemDetails';
@@ -89,13 +93,71 @@ function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="/validation-queue" element={
-          <ProtectedRoute allowedRoles={['chief', 'admin']}>
+        <Route path="/admin/workers" element={
+          <ProtectedRoute allowedRoles={['admin']}>
             <Layout userRole={userRole} key={userRole}>
-              <ValidationQueue />
+              <AdminWorkers />
             </Layout>
           </ProtectedRoute>
         } />
+
+        <Route path="/admin/machines" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout userRole={userRole} key={userRole}>
+              <AdminMachines />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/systems" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout userRole={userRole} key={userRole}>
+              <AdminSystems />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/ref" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout userRole={userRole} key={userRole}>
+              <AdminReferentials />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/ref/:type" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout userRole={userRole} key={userRole}>
+              <AdminRefList />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/workers" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout userRole={userRole} key={userRole}>
+              <AdminWorkers />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/machines" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout userRole={userRole} key={userRole}>
+              <AdminMachines />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/systems" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout userRole={userRole} key={userRole}>
+              <AdminSystems />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        {/* Validation Queue removed per request */}
 
         <Route path="/systems" element={
           <ProtectedRoute>

@@ -8,6 +8,8 @@ import {
   UserIcon,
   UsersIcon,
   ClipboardDocumentCheckIcon,
+  Cog6ToothIcon,
+  ComputerDesktopIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
@@ -24,16 +26,17 @@ export default function Layout({ children, userRole }) {
   console.log(`User role: ${userRole}`);
 
   const navigation = [
-    { name: 'Systems', href: '/systems', icon: HomeIcon },
-    { name: 'Machines', href: '/machines', icon: ClipboardDocumentCheckIcon },
-    { name: 'Workers', href: '/workers', icon: ClipboardDocumentCheckIcon },
+    // Main home/overview
+    { name: 'Home', href: '/dashboard', icon: HomeIcon },
+    // Changed icons: Systems -> document-like icon, Machines -> desktop/screen, Workers -> gear
+    { name: 'Systems', href: '/systems', icon: ClipboardDocumentCheckIcon },
+    { name: 'Machines', href: '/machines', icon: ComputerDesktopIcon },
+    { name: 'Workers', href: '/workers', icon: Cog6ToothIcon },
     { name: 'Profile', href: '/profile', icon: UserIcon },
     ...(userRole === 'admin' ? [
-      { name: 'Manage Users', href: '/admin/users', icon: UsersIcon }
+      { name: 'Manage Users', href: '/admin/users', icon: UsersIcon },
+      { name: 'Referentials', href: '/admin/ref', icon: ClipboardDocumentCheckIcon }
     ] : []),
-    ...((['chief', 'admin'].includes(userRole)) ? [
-      { name: 'Validation Queue', href: '/validation-queue', icon: ClipboardDocumentCheckIcon }
-    ] : [])
   ];
 
   const handleLogout = () => {
@@ -71,11 +74,13 @@ export default function Layout({ children, userRole }) {
                 <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
                   <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
                     <div className="flex h-16 shrink-0 items-center">
-                      <img
-                        className="h-8 w-auto"
-                        src="/logo.png"
-                        alt="Your Company"
-                      />
+                      <Link to="/dashboard">
+                        <img
+                          className="h-8 w-auto"
+                          src="/logo.png"
+                          alt="Your Company"
+                        />
+                      </Link>
                     </div>
                     <nav className="flex flex-1 flex-col">
                       <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -126,11 +131,13 @@ export default function Layout({ children, userRole }) {
         <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-[10vw] lg:min-w-[140px] lg:max-w-[220px] lg:flex-col bg-gradient-to-b from-indigo-50 to-white border-r border-gray-200">
           <div className="flex grow flex-col gap-y-4 overflow-y-auto px-2 pb-4">
             <div className="flex h-16 shrink-0 items-center justify-center">
-              <img
-                className="h-10 w-auto"
-                src="/logo.png"
-                alt="Your Company"
-              />
+              <Link to="/dashboard">
+                <img
+                  className="h-10 w-auto"
+                  src="/logo.png"
+                  alt="Your Company"
+                />
+              </Link>
             </div>
             <nav className="flex flex-1 flex-col">
               <ul role="list" className="flex flex-1 flex-col gap-y-5">

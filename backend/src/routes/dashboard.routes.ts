@@ -7,31 +7,14 @@ const router = express.Router();
 // Apply authentication middleware to all dashboard routes
 router.use(verifyToken);
 
-// Get all dashboard data in one call
+// Get all dashboard data (overview)
 router.get("/", dashboardController.getDashboardData);
 
-// Individual endpoints for specific dashboard sections
-router.get("/stats", dashboardController.getInspectionStats);
-router.get("/pieces", dashboardController.getCurrentPieceStates);
-router.get("/inspectors", dashboardController.getInspectorPerformance);
-router.get("/trends", dashboardController.getDailyTrends);
-router.get("/piece-history", dashboardController.getPieceHistory);
-router.get("/piece-history/:ref_piece", dashboardController.getPieceHistory);
-router.get("/piece-history/:ref_piece/detail", dashboardController.getPieceHistoryDetail);
-// Route to get validation time distribution
-router.get('/validation-times', dashboardController.getValidationTimeDistribution);
+// New lightweight endpoints used by the frontend overview
+router.get('/machines', dashboardController.getMachines);
+router.get('/workers', dashboardController.getWorkers);
+// inspection-related routes removed
 
-// FTP images endpoints
-router.get('/inspection-images', dashboardController.listInspectionImages);
-router.get('/inspection-images/:file', dashboardController.streamInspectionImage);
-
-// FTP media (images + videos) endpoints
-router.get('/inspection-media', dashboardController.listInspectionMedia);
-router.get('/inspection-media/:file', dashboardController.streamInspectionMedia);
-
-// PLY scans and analysis report
-router.get('/inspection-scans', dashboardController.listInspectionScans);
-router.get('/inspection-scans/:file', dashboardController.streamInspectionScan);
-router.get('/inspection-scan-report', dashboardController.getInspectionScanReport);
+// Note: media/image streaming endpoints were removed in the new API design.
 
 export default router;

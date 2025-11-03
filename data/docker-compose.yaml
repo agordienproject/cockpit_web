@@ -1,7 +1,7 @@
 services:
-  postgres_db_lab:
-    image: postgres:15
-    container_name: postgres_db_lab
+  postgres_nap:
+    image: postgres:17
+    container_name: postgres_nap
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin

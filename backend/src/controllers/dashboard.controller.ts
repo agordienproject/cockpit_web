@@ -1,23 +1,34 @@
 import { Request, Response } from "express";
+import * as dashboardService from "../services/dashboard.service";
 
-// Dashboard is disabled / blank per request. Return empty structures.
+// GET /dashboards/
 export const getDashboardData = async (_req: Request, res: Response) => {
-    res.status(200).json({ inspectionStats: {}, currentPieceStates: [], inspectorPerformance: [], dailyTrends: [], pieceHistory: [] });
+    try {
+        const overview = await dashboardService.getDashboardOverview();
+        res.status(200).json(overview);
+    } catch (err: any) {
+        console.error('getDashboardData error', err);
+        res.status(500).json({ error: err.message || 'Internal error' });
+    }
 };
 
-export const getInspectionStats = async (_req: Request, res: Response) => res.status(200).json({});
-export const getCurrentPieceStates = async (_req: Request, res: Response) => res.status(200).json([]);
-export const getInspectorPerformance = async (_req: Request, res: Response) => res.status(200).json([]);
-export const getDailyTrends = async (_req: Request, res: Response) => res.status(200).json([]);
-export const getPieceHistory = async (_req: Request, res: Response) => res.status(200).json([]);
-export const getPieceHistoryDetail = async (_req: Request, res: Response) => res.status(200).json([]);
-export const getValidationTimeDistribution = async (_req: Request, res: Response) => res.status(200).json([]);
+export const getMachines = async (_req: Request, res: Response) => {
+    try {
+        const machines = await dashboardService.getAllMachines();
+        res.status(200).json(machines);
+    } catch (err: any) {
+        console.error('getMachines error', err);
+        res.status(500).json({ error: err.message || 'Internal error' });
+    }
+};
 
-// FTP/media endpoints are kept but stubbed to return empty lists / not-implemented
-export const listInspectionImages = async (_req: Request, res: Response) => res.status(200).json([]);
-export const streamInspectionImage = async (_req: Request, res: Response) => res.status(404).json({ error: 'Disabled' });
-export const listInspectionMedia = async (_req: Request, res: Response) => res.status(200).json([]);
-export const streamInspectionMedia = async (_req: Request, res: Response) => res.status(404).json({ error: 'Disabled' });
-export const listInspectionScans = async (_req: Request, res: Response) => res.status(200).json([]);
-export const streamInspectionScan = async (_req: Request, res: Response) => res.status(404).json({ error: 'Disabled' });
-export const getInspectionScanReport = async (_req: Request, res: Response) => res.status(404).json({ error: 'Disabled' });
+export const getWorkers = async (_req: Request, res: Response) => {
+    try {
+        const workers = await dashboardService.getAllWorkers();
+        res.status(200).json(workers);
+    } catch (err: any) {
+        console.error('getWorkers error', err);
+        res.status(500).json({ error: err.message || 'Internal error' });
+    }
+};
+// Inspection-related endpoints removed from controller

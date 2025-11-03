@@ -7,6 +7,12 @@ const router = express.Router();
 
 // Apply authentication middleware to all routes
 router.use(verifyToken);
+// Endpoints for machine referential (define BEFORE parameterized routes)
+router.get("/machine-ref", machineController.getAllRefMachinesInfos);                             // Route for Machine referential
+router.get("/machine-ref/:id", machineController.getRefMachineInfos);                            // Route to get one Machine referential infos
+router.post("/machine-ref/", verifyRole, machineController.createRefMachineInfos);               // Route to create one Machine referential
+router.put("/machine-ref/:id", verifyRole, machineController.updateRefMachineInfos);             // Route to update one Machine referential
+router.delete("/machine-ref/:id", verifyRole, machineController.deleteRefMachineInfos);          // Route to delete one Machine by id
 
 // Endpoints for machines
 router.get("/", machineController.getAllMachinesInfos);
@@ -15,12 +21,5 @@ router.get("/:id/test", machineController.testMachine);                         
 router.post("/", verifyRole, machineController.createMachineInfos);             // Route to create machine
 router.put("/:id", verifyRole, machineController.updateMachineInfos);           // Route to update machine
 router.delete("/:id", verifyRole, machineController.deleteMachineInfos);        // Route to delete machine by id
-
-// Endpoints for machine referential
-router.get("/machine-ref", machineController.getAllRefMachinesInfos);                             // Route for Machine referential
-router.get("/machine-ref/:id", machineController.getRefMachineInfos);                            // Route to get one Machine referential infos
-router.post("/machine-ref/", verifyRole, machineController.createRefMachineInfos);               // Route to create one Machine referential
-router.put("/machine-ref/:id", verifyRole, machineController.updateRefMachineInfos);             // Route to update one Machine referential
-router.delete("/machine-ref/:id", verifyRole, machineController.deleteRefMachineInfos);          // Route to delete one Machine by id
 
 export default router;
