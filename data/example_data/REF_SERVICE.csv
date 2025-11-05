@@ -1,0 +1,6 @@
+id_service;name_service;description_service;deleted;creation_date;user_creation
+1;Data;Data service;false;
+2;Dev;Development service;false;
+3;Support;Support and ops;false;
+4;Appli;Application owner service;false;
+5;Common;Common utilities and shared;false;

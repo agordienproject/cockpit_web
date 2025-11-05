@@ -19,8 +19,8 @@ export const registerUser = async (data: any) => {
         });
         if (existingUser) throw new Error("Email already in use.");
 
-        // Get user role
-        data.role = "inspector";
+    // Default role for self-registered users
+    data.role = "user";
 
         // Password hashing
         const hashedPassword = bcrypt.hashSync(data.password, SALT_ROUNDS);

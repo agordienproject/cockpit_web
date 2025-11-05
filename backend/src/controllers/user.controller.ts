@@ -50,6 +50,12 @@ export const updateUserProfile = async (req: Request, res: Response) => {
         const id = req.params.id;
         const data = req.body;
         console.log("User id: ", id);
+        // Prevent non-admins from changing a user's service affiliation
+        const requester: any = (req as any).user;
+        // If the payload explicitly contains id_service and the requester is not admin, strip it.
+        if (Object.prototype.hasOwnProperty.call(data, 'id_service') && requester?.role !== 'admin') {
+            delete data.id_service;
+        }
         const response = await userService.updateUserProfileById(id, data);
         console.log("User profile updated");
         res.status(200).json(convertBigIntToString(response));

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken } from "../middlewares/auth.middleware";
-import { verifyRole } from "../middlewares/user.middleware";
+import { verifyRole, verifyWorkerServiceAccess } from "../middlewares/user.middleware";
 import * as workerController from "../controllers/worker.controller";
 
 const router = Router();
@@ -10,8 +10,8 @@ router.use(verifyToken);
 
 router.get("/", workerController.getAllWorkersInfos);
 router.get("/:id", workerController.getWorkerInfos);
-router.post("/", verifyRole, workerController.createWorkerInfos);
-router.put("/:id", verifyRole, workerController.updateWorkerInfos);
-router.delete("/:id", verifyRole, workerController.deleteWorkerInfos);
+router.post("/", verifyRole, verifyWorkerServiceAccess, workerController.createWorkerInfos);
+router.put("/:id", verifyRole, verifyWorkerServiceAccess, workerController.updateWorkerInfos);
+router.delete("/:id", verifyRole, verifyWorkerServiceAccess, workerController.deleteWorkerInfos);
 
 export default router;

@@ -16,6 +16,7 @@ import Machines from './pages/Machines';
 import MachineDetails from './pages/MachineDetails';
 import Workers from './pages/Workers';
 import WorkerDetails from './pages/WorkerDetails';
+import UnknownPage from './pages/UnknownPage';
 
 function App() {
   // Initialize from localStorage if present
@@ -25,7 +26,7 @@ function App() {
   const [userRole, setUserRole] = useState(() => {
     const role = localStorage.getItem('role');
     console.log(`Initial user role from localStorage: ${role}`);
-    return role || 'inspector'; // Default to 'inspector' if not set
+    return role || 'user'; // Default to 'user' if not set
   });
 
   // Sync auth state to localStorage
@@ -60,7 +61,7 @@ function App() {
             setUserRole(role);
           }} />
         } />
-        
+
         <Route path="/" element={
           <ProtectedRoute>
             <Layout>
@@ -94,7 +95,7 @@ function App() {
         } />
 
         <Route path="/admin/workers" element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={['admin', 'chief']}>
             <Layout userRole={userRole} key={userRole}>
               <AdminWorkers />
             </Layout>
@@ -102,7 +103,7 @@ function App() {
         } />
 
         <Route path="/admin/machines" element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={['admin', 'chief']}>
             <Layout userRole={userRole} key={userRole}>
               <AdminMachines />
             </Layout>
@@ -110,7 +111,7 @@ function App() {
         } />
 
         <Route path="/admin/systems" element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={['admin', 'chief']}>
             <Layout userRole={userRole} key={userRole}>
               <AdminSystems />
             </Layout>
@@ -206,6 +207,8 @@ function App() {
             </Layout>
           </ProtectedRoute>
         } />
+        {/* Catch-all: unknown / 404 page */}
+        <Route path="*" element={<UnknownPage />} />
       </Routes>
     </Router>
   );

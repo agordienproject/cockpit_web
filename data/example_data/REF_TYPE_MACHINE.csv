@@ -1,0 +1,4 @@
+id_type_machine;name_type_machine;description_type_machine;deleted;creation_date;user_creation
+1;Serveur;Machine physique / serveur;false;
+2;VM;Machine virtuelle;false;
+3;Conteneur;Conteneur / Docker;false;

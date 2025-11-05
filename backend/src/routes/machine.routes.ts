@@ -1,7 +1,7 @@
 import express from "express";
 import * as machineController from "../controllers/machine.controller";
 import { verifyToken } from "../middlewares/auth.middleware";
-import { verifyRole } from "../middlewares/user.middleware";
+import { verifyRole, requireAdmin } from "../middlewares/user.middleware";
 
 const router = express.Router();
 
@@ -10,9 +10,9 @@ router.use(verifyToken);
 // Endpoints for machine referential (define BEFORE parameterized routes)
 router.get("/machine-ref", machineController.getAllRefMachinesInfos);                             // Route for Machine referential
 router.get("/machine-ref/:id", machineController.getRefMachineInfos);                            // Route to get one Machine referential infos
-router.post("/machine-ref/", verifyRole, machineController.createRefMachineInfos);               // Route to create one Machine referential
-router.put("/machine-ref/:id", verifyRole, machineController.updateRefMachineInfos);             // Route to update one Machine referential
-router.delete("/machine-ref/:id", verifyRole, machineController.deleteRefMachineInfos);          // Route to delete one Machine by id
+router.post("/machine-ref/", requireAdmin, machineController.createRefMachineInfos);               // Route to create one Machine referential
+router.put("/machine-ref/:id", requireAdmin, machineController.updateRefMachineInfos);             // Route to update one Machine referential
+router.delete("/machine-ref/:id", requireAdmin, machineController.deleteRefMachineInfos);          // Route to delete one Machine by id
 
 // Endpoints for machines
 router.get("/", machineController.getAllMachinesInfos);

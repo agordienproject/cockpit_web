@@ -1,0 +1,5 @@
+id_type_sys;name_type_sys;description_type_sys;deleted;creation_date;user_creation
+1;BDD;Base de données;false;
+2;Application;Application;false;
+3;Web server;Serveur Web;false;
+4;Autre;Autre;false;

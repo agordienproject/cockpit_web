@@ -14,7 +14,7 @@ import {
   Select,
   SelectItem,
 } from '@tremor/react';
-import { userService } from '../services';
+import { userService, serviceService } from '../services';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -22,6 +22,7 @@ export default function AdminUsers() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
+  const [services, setServices] = useState([]);
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({
     first_name: '',
@@ -37,20 +38,30 @@ export default function AdminUsers() {
   const [emailFilter, setEmailFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [serviceFilter, setServiceFilter] = useState('');
 
   useEffect(() => {
     fetchUsers();
+    fetchServices();
   }, []);
 
   const fetchUsers = async () => {
     try {
-      // Use userService instead of direct fetch
       const data = await userService.getUsers();
       setUsers(data);
     } catch (err) {
       setError(err.message || 'Failed to load users');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchServices = async () => {
+    try {
+      const data = await serviceService.getAllServices();
+      setServices(Array.isArray(data) ? data : (data?.data || []));
+    } catch (err) {
+      console.warn('Failed to load services for user form', err);
     }
   };
 
@@ -63,8 +74,8 @@ export default function AdminUsers() {
     setError(null);
     try {
       // First, update classic user data (excluding role)
-      const { id_user, first_name, last_name, email, role: newRole } = editingUser;
-      const userToUpdate = { first_name, last_name, email };
+      const { id_user, first_name, last_name, email, role: newRole, id_service } = editingUser;
+      const userToUpdate = { first_name, last_name, email, id_service };
       const updatedUser = await userService.updateUser(id_user, userToUpdate);
 
       // Find the original user to compare role
@@ -173,6 +184,7 @@ export default function AdminUsers() {
       name.includes(nameFilter.toLowerCase()) &&
       email.includes(emailFilter.toLowerCase()) &&
       (roleFilter ? role === roleFilter : true) &&
+      (serviceFilter ? String(user.id_service || '') === serviceFilter : true) &&
       statusMatch
     );
   });
@@ -241,9 +253,22 @@ export default function AdminUsers() {
                 onValueChange={(value) => setNewUser({ ...newUser, role: value })}
                 disabled={saving}
               >
-                <SelectItem value="inspector">Inspector</SelectItem>
+                <SelectItem value="user">User</SelectItem>
                 <SelectItem value="chief">Chief</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Service</label>
+              <Select
+                value={newUser.id_service}
+                onValueChange={(value) => setNewUser({ ...newUser, id_service: value })}
+                disabled={saving}
+              >
+                <SelectItem value={''}>None</SelectItem>
+                {services.filter(Boolean).map(s => (
+                  <SelectItem key={s.id_service} value={String(s.id_service)}>{s.name_service}</SelectItem>
+                ))}
               </Select>
             </div>
             <div>
@@ -320,6 +345,25 @@ export default function AdminUsers() {
               </TableHeaderCell>
               <TableHeaderCell>
                 <div className="flex flex-col">
+                  <div className="flex items-center justify-between">
+                    <span>Service</span>
+                  </div>
+                  <Select
+                    className="mt-1"
+                    value={serviceFilter}
+                    onValueChange={setServiceFilter}
+                    disabled={saving}
+                    size="sm"
+                  >
+                    <SelectItem value="">All</SelectItem>
+                    {services.filter(Boolean).map(s => (
+                      <SelectItem key={s.id_service} value={String(s.id_service)}>{s.name_service}</SelectItem>
+                    ))}
+                  </Select>
+                </div>
+              </TableHeaderCell>
+              <TableHeaderCell>
+                <div className="flex flex-col">
                   Role
                   <Select
                     className="mt-1"
@@ -329,7 +373,7 @@ export default function AdminUsers() {
                     size="sm"
                   >
                     <SelectItem value="">All</SelectItem>
-                    <SelectItem value="inspector">Inspector</SelectItem>
+                    <SelectItem value="user">User</SelectItem>
                     <SelectItem value="chief">Chief</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                   </Select>
@@ -357,7 +401,7 @@ export default function AdminUsers() {
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                   No users found
                 </TableCell>
               </TableRow>
@@ -398,11 +442,29 @@ export default function AdminUsers() {
                   <TableCell>
                     {editingUser?.id_user === user.id_user ? (
                       <Select
+                        className="mt-1 w-full"
+                        value={editingUser.id_service}
+                        onValueChange={(value) => setEditingUser({ ...editingUser, id_service: value })}
+                        disabled={saving}
+                      >
+                        <SelectItem value={''}>None</SelectItem>
+                        {services.filter(Boolean).map(s => (
+                          <SelectItem key={s.id_service} value={String(s.id_service)}>{s.name_service}</SelectItem>
+                        ))}
+                      </Select>
+                    ) : (
+                      services.find(s => s && s.id_service === user.id_service)?.name_service || '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingUser?.id_user === user.id_user ? (
+                      <Select
+                        className="mt-1 w-full"
                         value={editingUser.role}
                         onValueChange={(value) => setEditingUser({ ...editingUser, role: value })}
                         disabled={saving}
                       >
-                        <SelectItem value="inspector">Inspector</SelectItem>
+                        <SelectItem value="user">User</SelectItem>
                         <SelectItem value="chief">Chief</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </Select>
@@ -410,7 +472,7 @@ export default function AdminUsers() {
                       <Badge color={
                         user.role === 'admin' ? 'red' :
                         user.role === 'chief' ? 'orange' :
-                        user.role === 'inspector' ? 'blue' :
+                        user.role === 'user' ? 'blue' :
                         'gray'
                       }>
                         {user.role}

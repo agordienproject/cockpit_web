@@ -62,7 +62,7 @@ def resolve_command(candidates: list[str]) -> list[str]:
     raise RuntimeError(f"None of these commands were found on PATH: {', '.join(candidates)}")
 
 
-def update_docker_compose(compose_path: Path, db_user: str, db_password: str, db_name: str, host_port: int):
+def update_docker_compose(compose_path: Path, db_user: str, db_password: str, db_name: str, host_port: int, svc_name: str, volume_name: str):
     ensure_package("pyyaml", "yaml")
     import yaml  # type: ignore
 
@@ -72,16 +72,7 @@ def update_docker_compose(compose_path: Path, db_user: str, db_password: str, db
     # Defensive defaults
     data = data or {}
     services = data.setdefault("services", {})
-    # Try to find an existing Postgres service by image name
-    svc_name = None
-    for name, svc_def in services.items():
-        if isinstance(svc_def, dict):
-            img = svc_def.get("image", "")
-            if isinstance(img, str) and img.lower().startswith("postgres"):
-                svc_name = name
-                break
-    if not svc_name:
-        svc_name = "postgres_nap"
+    # Use provided service name (container/service identifier in compose)
     svc = services.setdefault(svc_name, {})
 
     # Ensure required fields for a valid service
@@ -98,9 +89,14 @@ def update_docker_compose(compose_path: Path, db_user: str, db_password: str, db
     # ports: list of strings like "HOST:CONTAINER"
     svc["ports"] = [f"{host_port}:5432"]
 
-    # volumes: ensure a named volume exists
+    # volumes: ensure the named volume is mounted to Postgres data dir
     if not svc.get("volumes"):
-        svc["volumes"] = ["pgdata1:/var/lib/postgresql/data"]
+        svc["volumes"] = [f"{volume_name}:/var/lib/postgresql/data"]
+
+    # Ensure top-level volumes map contains the named volume so docker-compose creates it
+    vols = data.setdefault("volumes", {})
+    if volume_name not in vols:
+        vols[volume_name] = None
 
     # Optionally prune duplicate broken services (no image and no build)
     to_delete = []
@@ -133,6 +129,27 @@ def docker_compose_up(compose_path: Path, project_name: str = "database", remove
         raise RuntimeError("Docker Compose not found. Please install Docker Desktop.")
     run_command(compose_cmd)
     print("✓ Docker containers started (detached)")
+
+
+def check_docker_daemon() -> bool:
+    """Return True if Docker daemon is reachable (docker info succeeds).
+
+    This is a stronger check than merely having the docker command on PATH.
+    """
+    try:
+        res = subprocess.run(["docker", "info"], capture_output=True, text=True, check=False)
+        if res.returncode == 0:
+            return True
+        print("! Docker appears to be installed but the daemon is not reachable.")
+        if res.stderr:
+            print("Docker stderr:")
+            print(res.stderr)
+        if res.stdout:
+            print("Docker stdout:")
+            print(res.stdout)
+        return False
+    except FileNotFoundError:
+        return False
 
 
 def wait_for_db(host: str, port: int, user: str, password: str, db_name: str, timeout: int = 120):
@@ -222,6 +239,102 @@ def import_users_from_csv(csv_path: Path, host: str, port: int, user: str, passw
         conn.close()
 
 
+def import_csvs_from_dir(dir_path: Path, host: str, port: int, user: str, password: str, db_name: str):
+    """Generic CSV importer: looks for .csv files in the directory and inserts rows into matching DB tables.
+
+    Mapping rules (filename -> table) are forgiving: filenames like 'services.csv' or 'ref_service.csv'
+    will map to the database table "REF_SERVICE". For 'user.csv' or 'users.csv' the target is
+    "DIM_USER". The function reads CSV headers (semicolon-delimited) and builds an INSERT using the
+    provided columns. If a primary key column is detected (first header starting with 'id_'), an
+    ON CONFLICT DO NOTHING clause will be added to avoid duplicate inserts.
+    Missing timestamp columns such as 'creation_date' will be filled with the current time if not
+    provided in the CSV.
+    """
+    ensure_package("psycopg2-binary", "psycopg2")
+    import csv
+    import psycopg2  # type: ignore
+    from datetime import datetime
+
+    if not dir_path.exists() or not dir_path.is_dir():
+        print(f"! CSV import directory not found: {dir_path}")
+        return
+
+
+    # Simple mapping: filename stem (without extension) is the target table name.
+    # Caller must name CSV files to match DB table names (case-insensitive).
+
+    csv_files = list(dir_path.glob("*.csv"))
+    if not csv_files:
+        print(f"! No CSV files found in {dir_path}")
+        return
+
+    conn = psycopg2.connect(host=host, port=port, user=user, password=password, dbname=db_name)
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                for csv_file in csv_files:
+                    stem = csv_file.stem
+                    # Use the filename stem as the table name (case-insensitive). The DB is expected to have the table.
+                    table = stem.upper()
+                    print(f"→ Importing CSV {csv_file.name} -> table {table}")
+
+                    with csv_file.open("r", encoding="utf-8") as f:
+                        reader = csv.DictReader(f, delimiter=';')
+                        rows = list(reader)
+
+                    if not rows:
+                        print(f"   - no rows found in {csv_file.name}, skipping")
+                        continue
+
+                    # Normalize header names and detect primary key column (heuristic)
+                    headers = [h.strip() for h in rows[0].keys()]
+                    pk_col = None
+                    for h in headers:
+                        if h.lower().startswith("id_") or h.lower() == "id":
+                            pk_col = h
+                            break
+
+                    for r in rows:
+                        # Build column list and values; skip empty strings -> NULL
+                        cols = []
+                        vals = []
+                        for h in headers:
+                            raw = r.get(h)
+                            if raw is None or str(raw).strip() == "":
+                                # If column is creation_date and missing, set now()
+                                if h == "creation_date":
+                                    cols.append('"creation_date"')
+                                    vals.append(datetime.utcnow())
+                                else:
+                                    # include column with NULL value
+                                    cols.append(f'"{h}"')
+                                    vals.append(None)
+                            else:
+                                v = raw
+                                # convert boolean-ish fields
+                                if str(h).lower() in ("deleted",):
+                                    v = str(raw).strip().lower() in ("1", "true", "t", "yes", "y")
+                                cols.append(f'"{h}"')
+                                vals.append(v)
+
+                        col_list = ", ".join(cols)
+                        placeholders = ", ".join(["%s"] * len(vals))
+                        sql = f'INSERT INTO "{table}" ({col_list}) VALUES ({placeholders})'
+                        if pk_col:
+                            sql += f' ON CONFLICT ("{pk_col}") DO NOTHING'
+
+                        try:
+                            cur.execute(sql, tuple(vals))
+                        except Exception as e:
+                            print(f"   ! Failed to insert row into {table}: {e}")
+                            # print the failing row for debugging
+                            print(f"     row: {r}")
+                            continue
+                    print(f"   ✓ Imported {len(rows)} rows into {table}")
+    finally:
+        conn.close()
+
+
 def write_env_file_from_template(template_path: Path, env_path: Path, replacements: dict[str, str]):
     if not template_path.exists():
         raise FileNotFoundError(f"Env template not found: {template_path}")
@@ -292,8 +405,49 @@ def main():
 
     # If DB installation requested, run DB steps
     if install_db:
+        # Ask for container (service) name and volume name to use in docker-compose
+        default_svc = "postgres_nap"
+        default_vol = "pgdata1"
+        svc_name = prompt_with_default("Docker service name for Postgres (container name)", default=default_svc)
+        volume_name = prompt_with_default("Docker volume name for Postgres data", default=default_vol)
+
+        # If docker is available, check whether a container or volume with those names already exists
+        docker_available = is_command_available(["docker", "--version"]) or is_command_available(["docker", "version"])
+        if docker_available:
+            # Do a quick daemon availability check; if the daemon isn't running we must abort
+            if not check_docker_daemon():
+                print("Cannot reach Docker daemon. Please start Docker Desktop (or the Docker daemon) and try again.")
+                return
+            # Check existing containers and volumes
+            try:
+                existing_containers = subprocess.run(["docker", "ps", "-a", "--format", "{{.Names}}"], capture_output=True, text=True, check=False).stdout.splitlines()
+            except Exception:
+                existing_containers = []
+            try:
+                existing_volumes = subprocess.run(["docker", "volume", "ls", "-q"], capture_output=True, text=True, check=False).stdout.splitlines()
+            except Exception:
+                existing_volumes = []
+
+            if svc_name in existing_containers or volume_name in existing_volumes:
+                print(f"Detected existing resources: container={svc_name if svc_name in existing_containers else '-'} volume={volume_name if volume_name in existing_volumes else '-'}")
+                replace = prompt_with_default("One or more resources already exist. Replace them? (yes/no)", default="no")
+                if replace.strip().lower() in ("y", "yes"):
+                    # remove container if exists
+                    if svc_name in existing_containers:
+                        print(f"Removing existing container {svc_name}...")
+                        run_command(["docker", "rm", "-f", svc_name], check=False)
+                    # remove volume if exists
+                    if volume_name in existing_volumes:
+                        print(f"Removing existing volume {volume_name}...")
+                        run_command(["docker", "volume", "rm", "-f", volume_name], check=False)
+                else:
+                    print("Aborting installation as requested by user (will not replace existing container/volume).")
+                    return
+        else:
+            print("Warning: Docker not found on PATH; continuing but resource existence cannot be checked.")
+
         # 2) Update docker-compose
-        update_docker_compose(compose_path, db_user, db_password, db_name, host_port)
+        update_docker_compose(compose_path, db_user, db_password, db_name, host_port, svc_name, volume_name)
 
         # 3) Start Docker Compose under the 'database' stack.
         docker_compose_up(compose_path, project_name="database", remove_orphans=False)
@@ -304,8 +458,9 @@ def main():
         # 5) Apply DDLs
         apply_sql_file(ddl_inspection_path, ip_addr, host_port, db_user, db_password, db_name)
 
-        # 6) Seed users from CSV
-        import_users_from_csv(users_csv_path, ip_addr, host_port, db_user, db_password, db_name)
+    # 6) Seed CSVs from example_data (users + referentials)
+    example_data_dir = data_dir / "example_data"
+    import_csvs_from_dir(example_data_dir, ip_addr, host_port, db_user, db_password, db_name)
 
     # If WEB installation requested, run backend + frontend steps
     if install_web:
@@ -330,7 +485,6 @@ def main():
             "GLOBAL_IP": ip_addr,
             "DATABASE_URL_PSQL": db_url,
             "FRONTEND_URL": f"http://{ip_addr}:4000",
-            "FTP_HOST": ip_addr,
         }
         write_env_file_from_template(backend_env_tmpl, backend_env, backend_replacements)
 

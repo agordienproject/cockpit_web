@@ -30,7 +30,7 @@ export const registerUser = async (data: any) => {
         const hashedPassword = bcrypt.hashSync(data.password, SALT_ROUNDS);
 
         // Verify if role is valid
-        if (data.role !== "admin" && data.role !== "chief" && data.role !== "inspector") {
+        if (data.role !== "admin" && data.role !== "chief" && data.role !== "user") {
             throw new Error("Invalid role.");
         }
 
@@ -45,6 +45,7 @@ export const registerUser = async (data: any) => {
                     email: data.email,
                     password: hashedPassword,
                     role: data.role,
+                    id_service: data.id_service ? parseInt(data.id_service) : undefined,
                 },
             });
             if (!response) throw new Error("Error while creating user.");
@@ -64,6 +65,7 @@ export const registerUser = async (data: any) => {
                         email: data.email,
                         password: hashedPassword,
                         role: data.role,
+                        id_service: data.id_service ? parseInt(data.id_service) : undefined,
                     },
                 });
                 if (!response) throw new Error("Error while creating user.");
@@ -116,6 +118,7 @@ export const modifyUserInfosById = async (id: any, userData: any) => {
             first_name: userData.first_name,
             pseudo: userData.pseudo,
             email: userData.email,
+            id_service: userData.id_service ? parseInt(userData.id_service) : undefined,
         },
     });
 
@@ -222,6 +225,22 @@ export const updateUserProfileById = async (id: any, profileData: any) => {
     if (profileData.last_name) updateData.last_name = profileData.last_name;
     if (profileData.pseudo) updateData.pseudo = profileData.pseudo;
     if (profileData.email) updateData.email = profileData.email;
+    // Allow updating/clearing id_service when provided (controller already strips for non-admins)
+    if (Object.prototype.hasOwnProperty.call(profileData, 'id_service')) {
+        const val = profileData.id_service;
+        if (val === '' || val === null) {
+            // explicit clear
+            updateData.id_service = null;
+        } else if (val === undefined) {
+            // do nothing
+        } else {
+            // parse numeric value
+            const parsed = Number.parseInt(String(val));
+            if (!Number.isNaN(parsed)) {
+                updateData.id_service = parsed;
+            }
+        }
+    }
 
     // If password change is requested
     if (profileData.currentPassword && profileData.newPassword) {
