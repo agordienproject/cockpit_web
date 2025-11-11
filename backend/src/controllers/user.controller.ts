@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as userService from "../services/user.service";
+import { info, error as logError } from "../utils/logger";
 
 // Function to convert BigInt to String
 const convertBigIntToString = (obj: any) => {
@@ -12,21 +13,26 @@ const convertBigIntToString = (obj: any) => {
 export const createUser = async (req: Request, res: Response) => {
     try {
         const data = req.body;
-        console.log("Data: ", data);
+        info('user.createUser - start', { body: data, user: req.user?.id });
         const response = await userService.registerUser(data);
+        info('user.createUser - created', { id: (response as any)?.id_user });
         res.status(200).json(convertBigIntToString(response));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logError('user.createUser - error', { error: (error as any)?.message || error });
+        res.status(500).json({ error: (error as any)?.message || 'Internal error' });
     }
 }
 
 // Function to get all users information
 export const getUsersInfos = async (req: Request, res: Response) => {
     try {
+        info('user.getUsersInfos - start', { user: req.user?.id });
         const response = await userService.getAllUsers();
+        info('user.getUsersInfos - success', { count: Array.isArray(response) ? response.length : undefined });
         res.status(200).json(convertBigIntToString(response));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logError('user.getUsersInfos - error', { error: (error as any)?.message || error });
+        res.status(500).json({ error: (error as any)?.message || 'Internal error' });
     }
 }
 
@@ -35,12 +41,13 @@ export const getUserInfos = async (req: Request, res: Response) => {
     try {
         // Get user id from url
         const id = req.params.id;
-        console.log("User id: ", id);
+        info('user.getUserInfos - start', { id, user: req.user?.id });
         const response = await userService.getUserInfosById(id);
-        console.log("User found");
+        info('user.getUserInfos - success', { id });
         res.status(200).json(convertBigIntToString(response));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logError('user.getUserInfos - error', { error: (error as any)?.message || error });
+        res.status(500).json({ error: (error as any)?.message || 'Internal error' });
     }
 };
 
@@ -49,7 +56,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
         const data = req.body;
-        console.log("User id: ", id);
+        info('user.updateUserProfile - start', { id, body: data, user: req.user?.id });
         // Prevent non-admins from changing a user's service affiliation
         const requester: any = (req as any).user;
         // If the payload explicitly contains id_service and the requester is not admin, strip it.
@@ -57,10 +64,11 @@ export const updateUserProfile = async (req: Request, res: Response) => {
             delete data.id_service;
         }
         const response = await userService.updateUserProfileById(id, data);
-        console.log("User profile updated");
+        info('user.updateUserProfile - success', { id });
         res.status(200).json(convertBigIntToString(response));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logError('user.updateUserProfile - error', { error: (error as any)?.message || error });
+        res.status(500).json({ error: (error as any)?.message || 'Internal error' });
     }
 }
 
@@ -70,13 +78,14 @@ export const modifyUserRole = async (req: Request, res: Response) => {
         // Get user id from url
         const id = req.params.id;
         const data = req.body;
-        console.log("User id: ", id);
+        info('user.modifyUserRole - start', { id, body: data, user: req.user?.id });
         const response = await userService.modifyUserRoleById(id, data.role);
-        console.log("User role modified");
-        console.log("Modification response: ", response);
+        info('user.modifyUserRole - success', { id, role: data.role });
+        info('user.modifyUserRole - response', { response });
         res.status(200).json(convertBigIntToString(response));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logError('user.modifyUserRole - error', { error: (error as any)?.message || error });
+        res.status(500).json({ error: (error as any)?.message || 'Internal error' });
     }
 }
 
@@ -85,13 +94,14 @@ export const deleteUser = async (req: Request, res: Response) => {
     try {
         // Get user id from url
         const id = req.params.id;
-        console.log("User id: ", id);
+        info('user.deleteUser - start', { id, user: req.user?.id });
         // Delete user
         await userService.deleteUserById(id);
-        console.log("User deleted");
+        info('user.deleteUser - success', { id });
         res.status(200).json({ message: "User deleted" });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logError('user.deleteUser - error', { error: (error as any)?.message || error });
+        res.status(500).json({ error: (error as any)?.message || 'Internal error' });
     }
 }
 
@@ -100,12 +110,13 @@ export const activateUser = async (req: Request, res: Response) => {
     try {
         // Get user id from url
         const id = req.params.id;
-        console.log("User id: ", id);
+        info('user.activateUser - start', { id, user: req.user?.id });
         // Activate user
         const response = await userService.activateUserById(id);
-        console.log("User activated");
+        info('user.activateUser - success', { id });
         res.status(200).json(convertBigIntToString(response));
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        logError('user.activateUser - error', { error: (error as any)?.message || error });
+        res.status(500).json({ error: (error as any)?.message || 'Internal error' });
     }
 }

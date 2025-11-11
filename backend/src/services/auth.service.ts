@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { prismaPSQL } from "../prisma/client_psql";
 import { fixUserIdSequence } from "../utils/db-fixes";
 const JWT_SECRET = process.env.JWT_SECRET || "secret_key";
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = process.env.SALT_ROUNDS ? parseInt(process.env.SALT_ROUNDS) : 12;
 
 // ------------------- Utility Functions ------------------- //
 

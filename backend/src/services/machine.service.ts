@@ -97,3 +97,16 @@ export const deleteRefMachine = async (id: any, userId: any) => {
   await prismaPSQL.rEF_TYPE_MACHINE.update({ where: { id_type_machine: id }, data: { deleted: true, modification_date: new Date(), user_modification: userId ? parseInt(userId) : undefined } });
   return r;
 };
+
+// Export all disabled machine referential entries
+export const getAllDisabledRefMachines = async () => {
+  return await prismaPSQL.rEF_TYPE_MACHINE.findMany({ where: { deleted: true } });
+};
+
+// Reactivate a disabled machine referential entry
+export const activateRefMachineById = async (id: any, userId: any) => {
+  const r = await prismaPSQL.rEF_TYPE_MACHINE.findFirst({ where: { id_type_machine: id, deleted: true } });
+  if (!r) throw new Error('Ref machine not found or not deleted');
+  const updated = await prismaPSQL.rEF_TYPE_MACHINE.update({ where: { id_type_machine: id }, data: { deleted: false, modification_date: new Date(), user_modification: userId ? parseInt(userId) : undefined } });
+  return updated;
+};

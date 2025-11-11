@@ -335,6 +335,54 @@ def import_csvs_from_dir(dir_path: Path, host: str, port: int, user: str, passwo
         conn.close()
 
 
+def fix_db_sequences(host: str, port: int, user: str, password: str, db_name: str, tables_pk_map: dict | None = None):
+    """Ensure sequences for integer primary keys are set to the current max(id) for seeded tables.
+
+    By default this will attempt to fix common tables used by this project. The tables_pk_map
+    parameter lets callers provide a custom mapping of table -> pk column name.
+    """
+    ensure_package("psycopg2-binary", "psycopg2")
+    import psycopg2  # type: ignore
+
+    # Default mapping inferred from Prisma schema / project conventions
+    default_map = {
+        'DIM_USER': 'id_user',
+        'DIM_MACHINE': 'id_machine',
+        'DIM_SYSTEM': 'id_sys',
+        'DIM_WORKER': 'id_worker',
+        'REF_SERVICE': 'id_service',
+        'REF_TYPE_MACHINE': 'id_type_machine',
+        'REF_TYPE_SYSTEM': 'id_type_sys',
+        'FCT_VERIF_SYSTEM': 'id_verif',
+    }
+
+    mapping = tables_pk_map or default_map
+
+    print(f"→ Fixing DB sequences for seeded tables: {', '.join(mapping.keys())}")
+    conn = psycopg2.connect(host=host, port=port, user=user, password=password, dbname=db_name)
+    try:
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            for table, pk in mapping.items():
+                try:
+                    # Sequence names often require double-quotes when they contain uppercase letters.
+                    # Passing the sequence name as a single-quoted string containing the double-quoted
+                    # identifier works reliably, e.g. '"DIM_USER_id_user_seq"'.
+                    seq_quoted = f'"{table}_{pk}_seq"'
+                    seq_literal = f"'{seq_quoted}'"
+                    sql = (
+                        f"SELECT setval({seq_literal}, (SELECT COALESCE(MAX(\"{pk}\"), 0) FROM \"{table}\"), true);"
+                    )
+                    # Execute the setval; if table/sequence doesn't exist, catch and continue
+                    cur.execute(sql)
+                    print(f"   ✓ Sequence fixed for {table}.{pk}")
+                except Exception as e:
+                    print(f"   ! Could not fix sequence for {table}.{pk}: {e}")
+                    continue
+    finally:
+        conn.close()
+
+
 def write_env_file_from_template(template_path: Path, env_path: Path, replacements: dict[str, str]):
     if not template_path.exists():
         raise FileNotFoundError(f"Env template not found: {template_path}")
@@ -461,6 +509,12 @@ def main():
     # 6) Seed CSVs from example_data (users + referentials)
     example_data_dir = data_dir / "example_data"
     import_csvs_from_dir(example_data_dir, ip_addr, host_port, db_user, db_password, db_name)
+    # After seeding CSVs, ensure DB sequences are aligned with imported IDs so future inserts do not
+    # conflict with existing primary keys. This mirrors the 'fixUserIdSequence' logic used elsewhere.
+    try:
+        fix_db_sequences(ip_addr, host_port, db_user, db_password, db_name)
+    except Exception as e:
+        print(f"Warning: failed to fix DB sequences automatically: {e}")
 
     # If WEB installation requested, run backend + frontend steps
     if install_web:

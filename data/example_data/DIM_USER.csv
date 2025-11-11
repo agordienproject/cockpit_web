@@ -1,2 +1,2 @@
 id_user;first_name;last_name;pseudo;email;password;role;id_service;deleted
-1;Alexis;Gordien;agordien;agordien@nproximite.com;$2a$12$xSfwfJY5OADdcLSGVi/T.unKPxzfSpiXr/DyCWl6HxswbFgsn3nN2;admin;1;false
+1;Alexis;Gordien;agordien;agordien@nproximite.com;$2a$12$EbNmgET9zIVjnQHrInL/teAT/v7ChlVGLAJnX1WrOGFuAomVb2xk6;admin;1;false

@@ -54,8 +54,15 @@ export const deleteSystemById = async (id: any, userId: any) => {
 };
 
 // Referential for system types (DIM_TYPE_SYSTEM)
+
+// Export all enabled systems referential
 export const getAllRefSystems = async () => {
   return await prismaPSQL.rEF_TYPE_SYSTEM.findMany({ where: { deleted: false } });
+};
+
+// Export all disabled systems referential
+export const getAllDisabledRefSystems = async () => {
+  return await prismaPSQL.rEF_TYPE_SYSTEM.findMany({ where: { deleted: true } });
 };
 
 export const getRefSystemById = async (id: any) => {
@@ -96,4 +103,12 @@ export const deleteRefSystem = async (id: any, userId: any) => {
   if (!r) throw new Error("Ref system not found or already deleted");
   await prismaPSQL.rEF_TYPE_SYSTEM.update({ where: { id_type_sys: id }, data: { deleted: true, modification_date: new Date(), user_modification: userId ? parseInt(userId) : undefined } });
   return r;
+};
+
+// Reactivate a disabled system referential entry
+export const activateRefSystemById = async (id: any, userId: any) => {
+  const r = await prismaPSQL.rEF_TYPE_SYSTEM.findFirst({ where: { id_type_sys: id, deleted: true } });
+  if (!r) throw new Error('Ref system not found or not deleted');
+  const updated = await prismaPSQL.rEF_TYPE_SYSTEM.update({ where: { id_type_sys: id }, data: { deleted: false, modification_date: new Date(), user_modification: userId ? parseInt(userId) : undefined } });
+  return updated;
 };

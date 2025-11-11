@@ -43,4 +43,17 @@ export const deleteServiceById = async (id: any, userId: any) => {
   return svc;
 };
 
+// Export all disabled services
+export const getAllDisabledServices = async () => {
+  return await prismaPSQL.rEF_SERVICE.findMany({ where: { deleted: true } });
+};
+
+// Reactivate a disabled service
+export const activateServiceById = async (id: any, userId: any) => {
+  const svc = await prismaPSQL.rEF_SERVICE.findFirst({ where: { id_service: id, deleted: true } });
+  if (!svc) throw new Error('Service not found or not deleted');
+  const updated = await prismaPSQL.rEF_SERVICE.update({ where: { id_service: id }, data: { deleted: false, modification_date: new Date(), user_modification: userId ? parseInt(userId) : undefined } });
+  return updated;
+};
+
 export default {};

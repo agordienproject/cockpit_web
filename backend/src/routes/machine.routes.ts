@@ -8,7 +8,11 @@ const router = express.Router();
 // Apply authentication middleware to all routes
 router.use(verifyToken);
 // Endpoints for machine referential (define BEFORE parameterized routes)
+// Endpoints for machine referential (define BEFORE parameterized routes)
 router.get("/machine-ref", machineController.getAllRefMachinesInfos);                             // Route for Machine referential
+// Admin: list disabled machine referential entries and reactivate (fixed paths before parameterized)
+router.get("/machine-ref/disabled", requireAdmin, machineController.getAllDisabledRefMachinesInfos);
+router.put("/machine-ref/:id/activate", requireAdmin, machineController.activateRefMachineInfos);
 router.get("/machine-ref/:id", machineController.getRefMachineInfos);                            // Route to get one Machine referential infos
 router.post("/machine-ref/", requireAdmin, machineController.createRefMachineInfos);               // Route to create one Machine referential
 router.put("/machine-ref/:id", requireAdmin, machineController.updateRefMachineInfos);             // Route to update one Machine referential

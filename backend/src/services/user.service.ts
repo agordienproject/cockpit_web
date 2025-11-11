@@ -3,7 +3,7 @@ import { fixUserIdSequence } from "../utils/db-fixes";
 import bcrypt from "bcryptjs";
 
 
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = process.env.SALT_ROUNDS ? parseInt(process.env.SALT_ROUNDS) : 12;
 
 
 // ------------------- Fonctions utiles ------------------- //

@@ -17,6 +17,7 @@ import { machineService, systemService, serviceService } from '../services';
 export default function AdminRefList() {
   const { type } = useParams();
   const [items, setItems] = useState([]);
+  const [disabledItems, setDisabledItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -64,6 +65,8 @@ export default function AdminRefList() {
     try {
       const data = await api.list();
       setItems(Array.isArray(data) ? data : (data?.data || []));
+      // clear disabled items when switching type or refreshing
+      setDisabledItems([]);
     } catch (err) { setError(err.message || 'Failed to load'); } finally { setLoading(false); }
   };
 
@@ -119,8 +122,32 @@ export default function AdminRefList() {
     <main className="p-4 md:p-10 w-full">
       <div className="flex justify-between items-center mb-6">
         <Title>Referential: {type}</Title>
-        <div>
+        <div className="flex items-center gap-2">
           <Button onClick={() => setShowAdd(true)}>Add</Button>
+          <Button
+            variant={"secondary"}
+            onClick={async () => {
+              // toggle and fetch disabled items when turning on
+              if (disabledItems.length === 0) {
+                setLoading(true);
+                try {
+                  if (type === 'machines') {
+                    const d = await machineService.getDisabledRefMachines();
+                    setDisabledItems(Array.isArray(d) ? d : (d?.data || []));
+                  } else if (type === 'systems') {
+                    const d = await systemService.getDisabledRefSystems();
+                    setDisabledItems(Array.isArray(d) ? d : (d?.data || []));
+                  } else if (type === 'services') {
+                    const d = await serviceService.getDisabledServices();
+                    setDisabledItems(Array.isArray(d) ? d : (d?.data || []));
+                  }
+                } catch (err) { setError(err.message || 'Failed to load disabled'); } finally { setLoading(false); }
+              } else {
+                // clear disabled view
+                setDisabledItems([]);
+              }
+            }}
+          >{disabledItems.length === 0 ? 'Show disabled' : 'Hide disabled'}</Button>
         </div>
       </div>
 
@@ -158,10 +185,11 @@ export default function AdminRefList() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.length === 0 ? (
+            {(items.length === 0 && disabledItems.length === 0) ? (
               <TableRow><TableCell colSpan={5} className="text-center py-8 text-gray-500">No items found</TableCell></TableRow>
             ) : (
-              items.map((it, idx) => (
+              // merge active items with disabledItems (disabled items will have deleted=true)
+              [...items, ...disabledItems].map((it, idx) => (
                 <TableRow key={it ? it[api.idField] : `item-${idx}`}>
                   <TableCell>{it ? it[api.idField] : '-'}</TableCell>
                   <TableCell>{editing?.[api.idField] === (it ? it[api.idField] : null) ? (<TextInput value={editing[api.nameField]} onChange={e => setEditing({ ...editing, [api.nameField]: e.target.value })} />) : (it ? it[api.nameField] : '-')}</TableCell>
@@ -176,7 +204,30 @@ export default function AdminRefList() {
                     ) : (
                       <div className="flex gap-2">
                         <Button onClick={() => handleEdit(it)}>Edit</Button>
-                        <Button color="red" onClick={() => handleDelete(it)} disabled={saving}>{saving ? 'Deleting...' : 'Delete'}</Button>
+                        {it.deleted ? (
+                          <Button
+                            onClick={async () => {
+                              if (!window.confirm('Reactivate this item?')) return;
+                              setSaving(true); setError(null);
+                              try {
+                                if (type === 'machines') {
+                                  await machineService.activateRefMachine(it[api.idField]);
+                                  setDisabledItems(disabledItems.filter(x => x[api.idField] !== it[api.idField]));
+                                } else if (type === 'systems') {
+                                  await systemService.activateRefSystem(it[api.idField]);
+                                  setDisabledItems(disabledItems.filter(x => x[api.idField] !== it[api.idField]));
+                                } else if (type === 'services') {
+                                  await serviceService.activateService(it[api.idField]);
+                                  setDisabledItems(disabledItems.filter(x => x[api.idField] !== it[api.idField]));
+                                }
+                                // remove deleted flag in items if present
+                                setItems(items.map(x => x && x[api.idField] === it[api.idField] ? { ...x, deleted: false } : x));
+                              } catch (err) { setError(err.message || 'Failed to reactivate'); } finally { setSaving(false); }
+                            }}
+                          >Reactivate</Button>
+                        ) : (
+                          <Button color="red" onClick={() => handleDelete(it)} disabled={saving}>{saving ? 'Deleting...' : 'Delete'}</Button>
+                        )}
                       </div>
                     )}
                   </TableCell>

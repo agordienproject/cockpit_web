@@ -13,9 +13,3 @@ export const fixUserIdSequence = async () => {
         throw error;
     }
 };
-
-export const fixInspectionIdSequence = async () => {
-    // inspections removed — no-op
-    console.log('fixInspectionIdSequence called but inspections have been removed; skipping');
-    return null;
-};

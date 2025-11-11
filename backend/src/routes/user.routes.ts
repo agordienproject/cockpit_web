@@ -11,6 +11,9 @@ router.use(verifyToken);
 router.get("/", requireAdminOrChief, userController.getUsersInfos);                         // Route to get all users information (admin/chief)
 // Endpoints for service routes (define before parameterized user routes)
 router.get("/services/", serviceController.getAllServicesInfos);                   // Route to get all service informations
+// Admin: list disabled services and reactivate (fixed paths before parameterized)
+router.get("/services/disabled", requireAdmin, serviceController.getAllDisabledServicesInfos); // Route to get disabled services
+router.put("/services/:id/activate", requireAdmin, serviceController.activateServiceInfos); // Route to reactivate service
 router.get("/services/:id", serviceController.getServiceInfos);                    // Route to get service information by id
 // Service referential management only allowed by admin
 router.post("/services", requireAdmin, serviceController.createServiceInfos);                // Route to create service

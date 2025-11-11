@@ -46,4 +46,14 @@ export const deleteRefSystem = async (id) => {
   return resp.data;
 };
 
-export default { getAllSystems, getSystemById, createSystem, updateSystem, deleteSystem, getAllRefSystems, createRefSystem, updateRefSystem, deleteRefSystem };
+export const getDisabledRefSystems = async () => {
+  const resp = await api.get('/systems/sys-ref/disabled');
+  return resp.data;
+};
+
+export const activateRefSystem = async (id) => {
+  const resp = await api.put(`/systems/sys-ref/${id}/activate`);
+  return resp.data;
+};
+
+export default { getAllSystems, getSystemById, createSystem, updateSystem, deleteSystem, getAllRefSystems, createRefSystem, updateRefSystem, deleteRefSystem, getDisabledRefSystems, activateRefSystem };

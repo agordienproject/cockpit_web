@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as verifService from "../services/verif.service";
+import { info, error as logError } from "../utils/logger";
 
 const convertBigIntToString = (obj: any) => {
     return JSON.parse(JSON.stringify(obj, (_, value) =>
@@ -9,18 +10,24 @@ const convertBigIntToString = (obj: any) => {
 
 export const getAllVerifInfos = async (req: Request, res: Response) => {
     try {
+        info('verif.getAllVerifInfos - start', { user: req.user?.id });
         const resp = await verifService.getAllVerifs();
+        info('verif.getAllVerifInfos - success', { count: Array.isArray(resp) ? resp.length : undefined });
         res.status(200).json(convertBigIntToString(resp));
     } catch (error: any) {
+        logError('verif.getAllVerifInfos - error', { error: error?.message || error });
         res.status(500).json({ error: error.message });
     }
 };
 
 export const getAllCurrentVerifInfos = async (req: Request, res: Response) => {
     try {
+        info('verif.getAllCurrentVerifInfos - start', { user: req.user?.id });
         const resp = await verifService.getLatestVerifPerSystem();
+        info('verif.getAllCurrentVerifInfos - success', { count: Array.isArray(resp) ? resp.length : undefined });
         res.status(200).json(convertBigIntToString(resp));
     } catch (error: any) {
+        logError('verif.getAllCurrentVerifInfos - error', { error: error?.message || error });
         res.status(500).json({ error: error.message });
     }
 };
@@ -28,9 +35,12 @@ export const getAllCurrentVerifInfos = async (req: Request, res: Response) => {
 export const getVerifInfos = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
+        info('verif.getVerifInfos - start', { id, user: req.user?.id });
         const resp = await verifService.getVerifById(id);
+        info('verif.getVerifInfos - success', { id });
         res.status(200).json(convertBigIntToString(resp));
     } catch (error: any) {
+        logError('verif.getVerifInfos - error', { error: error?.message || error });
         res.status(500).json({ error: error.message });
     }
 };
@@ -38,9 +48,12 @@ export const getVerifInfos = async (req: Request, res: Response) => {
 export const createVerifInfos = async (req: Request, res: Response) => {
     try {
         const data = req.body;
+        info('verif.createVerifInfos - start', { body: data, user: req.user?.id });
         const resp = await verifService.createVerif(data, req.user?.id);
+        info('verif.createVerifInfos - success', { id: (resp as any)?.id_verif });
         res.status(200).json(convertBigIntToString(resp));
     } catch (error: any) {
+        logError('verif.createVerifInfos - error', { error: error?.message || error });
         res.status(500).json({ error: error.message });
     }
 };
@@ -49,9 +62,12 @@ export const updateVerifInfos = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
         const data = req.body;
+        info('verif.updateVerifInfos - start', { id, body: data, user: req.user?.id });
         const resp = await verifService.updateVerif(id, data, req.user?.id);
+        info('verif.updateVerifInfos - success', { id });
         res.status(200).json(convertBigIntToString(resp));
     } catch (error: any) {
+        logError('verif.updateVerifInfos - error', { error: error?.message || error });
         res.status(500).json({ error: error.message });
     }
 };
@@ -59,9 +75,12 @@ export const updateVerifInfos = async (req: Request, res: Response) => {
 export const deleteVerifInfos = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
+        info('verif.deleteVerifInfos - start', { id, user: req.user?.id });
         const resp = await verifService.deleteVerifById(id, req.user?.id);
+        info('verif.deleteVerifInfos - success', { id });
         res.status(200).json(convertBigIntToString(resp));
     } catch (error: any) {
+        logError('verif.deleteVerifInfos - error', { error: error?.message || error });
         res.status(500).json({ error: error.message });
     }
 };

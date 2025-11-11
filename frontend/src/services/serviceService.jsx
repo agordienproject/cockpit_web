@@ -25,4 +25,14 @@ export const deleteService = async (id) => {
   return resp.data;
 };
 
-export default { getAllServices, getServiceById, createService, updateService, deleteService };
+export const getDisabledServices = async () => {
+  const resp = await api.get('/users/services/disabled');
+  return resp.data;
+};
+
+export const activateService = async (id) => {
+  const resp = await api.put(`/users/services/${id}/activate`);
+  return resp.data;
+};
+
+export default { getAllServices, getServiceById, createService, updateService, deleteService, getDisabledServices, activateService };

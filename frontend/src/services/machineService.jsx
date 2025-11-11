@@ -46,4 +46,14 @@ export const deleteRefMachine = async (id) => {
   return resp.data;
 };
 
-export default { getAllMachines, getMachineById, createMachine, updateMachine, deleteMachine, getAllRefMachines, createRefMachine, updateRefMachine, deleteRefMachine };
+export const getDisabledRefMachines = async () => {
+  const resp = await api.get('/machines/machine-ref/disabled');
+  return resp.data;
+};
+
+export const activateRefMachine = async (id) => {
+  const resp = await api.put(`/machines/machine-ref/${id}/activate`);
+  return resp.data;
+};
+
+export default { getAllMachines, getMachineById, createMachine, updateMachine, deleteMachine, getAllRefMachines, createRefMachine, updateRefMachine, deleteRefMachine, getDisabledRefMachines, activateRefMachine };
