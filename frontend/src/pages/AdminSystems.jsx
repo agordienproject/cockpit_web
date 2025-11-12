@@ -20,6 +20,9 @@ export default function AdminSystems() {
   const [machines, setMachines] = useState([]);
   const [types, setTypes] = useState([]);
   const [services, setServices] = useState([]);
+  const [typeQuery, setTypeQuery] = useState('');
+  const [machineQuery, setMachineQuery] = useState('');
+  const [serviceQuery, setServiceQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -104,24 +107,48 @@ export default function AdminSystems() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Type</label>
+              <TextInput className="mb-2" placeholder="Search type..." value={typeQuery} onChange={e => setTypeQuery(e.target.value)} />
               <Select value={newItem.id_type_sys} onValueChange={val => setNewItem({ ...newItem, id_type_sys: val })}>
                 <SelectItem value={''}>None</SelectItem>
-                {types.filter(Boolean).map(t => <SelectItem key={t.id_type_sys} value={String(t.id_type_sys)}>{t.name_type_sys}</SelectItem>)}
+                {types
+                  .filter(Boolean)
+                  .filter(t => !typeQuery || (t.name_type_sys || '').toString().toLowerCase().includes(typeQuery.toLowerCase()))
+                  .slice(0, 20)
+                  .map(t => <SelectItem key={t.id_type_sys} value={String(t.id_type_sys)}>{t.name_type_sys}</SelectItem>)}
               </Select>
+              {types.length > 20 && (
+                <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, types.length)} of {types.length}. Refine search to find other options.</div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Machine</label>
+              <TextInput className="mb-2" placeholder="Search machine..." value={machineQuery} onChange={e => setMachineQuery(e.target.value)} />
               <Select value={newItem.id_machine_sys} onValueChange={val => setNewItem({ ...newItem, id_machine_sys: val })}>
                 <SelectItem value={''}>None</SelectItem>
-                {machines.filter(Boolean).map(m => <SelectItem key={m.id_machine} value={String(m.id_machine)}>{m.name_machine}</SelectItem>)}
+                {machines
+                  .filter(Boolean)
+                  .filter(m => !machineQuery || (m.name_machine || '').toString().toLowerCase().includes(machineQuery.toLowerCase()))
+                  .slice(0, 20)
+                  .map(m => <SelectItem key={m.id_machine} value={String(m.id_machine)}>{m.name_machine}</SelectItem>)}
               </Select>
+              {machines.length > 20 && (
+                <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, machines.length)} of {machines.length}. Refine search to find other options.</div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Service</label>
+              <TextInput className="mb-2" placeholder="Search service..." value={serviceQuery} onChange={e => setServiceQuery(e.target.value)} />
               <Select value={newItem.id_service_sys} onValueChange={val => setNewItem({ ...newItem, id_service_sys: val })}>
                 <SelectItem value={''}>None</SelectItem>
-                {services.filter(Boolean).map(svc => <SelectItem key={svc.id_service} value={String(svc.id_service)}>{svc.name_service}</SelectItem>)}
+                {services
+                  .filter(Boolean)
+                  .filter(svc => !serviceQuery || (svc.name_service || '').toString().toLowerCase().includes(serviceQuery.toLowerCase()))
+                  .slice(0, 20)
+                  .map(svc => <SelectItem key={svc.id_service} value={String(svc.id_service)}>{svc.name_service}</SelectItem>)}
               </Select>
+              {services.length > 20 && (
+                <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, services.length)} of {services.length}. Refine search to find other options.</div>
+              )}
             </div>
             <div className="col-span-full">
               <label className="block text-sm font-medium text-gray-700">Description</label>
@@ -142,6 +169,7 @@ export default function AdminSystems() {
               <TableHeaderCell>ID</TableHeaderCell>
               <TableHeaderCell>Name</TableHeaderCell>
               <TableHeaderCell>Version</TableHeaderCell>
+              <TableHeaderCell>Type</TableHeaderCell>
               <TableHeaderCell>Machine</TableHeaderCell>
               <TableHeaderCell>Description</TableHeaderCell>
               <TableHeaderCell>Status</TableHeaderCell>
@@ -157,7 +185,46 @@ export default function AdminSystems() {
                   <TableCell>{s.id_sys}</TableCell>
                   <TableCell>{editing?.id_sys === s.id_sys ? (<TextInput value={editing.name_sys} onChange={e => setEditing({ ...editing, name_sys: e.target.value })} />) : s.name_sys}</TableCell>
                   <TableCell>{editing?.id_sys === s.id_sys ? (<TextInput value={editing.version_sys} onChange={e => setEditing({ ...editing, version_sys: e.target.value })} />) : (s.version_sys || '-')}</TableCell>
-                  <TableCell>{s.id_machine_sys ? (machines.find(m => m && m.id_machine === s.id_machine_sys)?.name_machine || s.id_machine_sys) : '-'}</TableCell>
+                  <TableCell>
+                    {editing?.id_sys === s.id_sys ? (
+                      <div>
+                        <TextInput className="mb-2" placeholder="Search type..." value={typeQuery} onChange={e => setTypeQuery(e.target.value)} />
+                        <Select value={editing.id_type_sys} onValueChange={val => setEditing({ ...editing, id_type_sys: val })}>
+                          <SelectItem value={''}>None</SelectItem>
+                          {types
+                            .filter(Boolean)
+                            .filter(t => !typeQuery || (t.name_type_sys || '').toString().toLowerCase().includes(typeQuery.toLowerCase()))
+                            .slice(0, 20)
+                            .map(t => <SelectItem key={t.id_type_sys} value={String(t.id_type_sys)}>{t.name_type_sys}</SelectItem>)}
+                        </Select>
+                        {types.length > 20 && (
+                          <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, types.length)} of {types.length}. Refine search to find other options.</div>
+                        )}
+                      </div>
+                    ) : (
+                      types.find(t => t && t.id_type_sys === s.id_type_sys)?.name_type_sys || '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editing?.id_sys === s.id_sys ? (
+                      <div>
+                        <TextInput className="mb-2" placeholder="Search machine..." value={machineQuery} onChange={e => setMachineQuery(e.target.value)} />
+                        <Select value={editing.id_machine_sys} onValueChange={val => setEditing({ ...editing, id_machine_sys: val })}>
+                          <SelectItem value={''}>None</SelectItem>
+                          {machines
+                            .filter(Boolean)
+                            .filter(m => !machineQuery || (m.name_machine || '').toString().toLowerCase().includes(machineQuery.toLowerCase()))
+                            .slice(0, 20)
+                            .map(m => <SelectItem key={m.id_machine} value={String(m.id_machine)}>{m.name_machine}</SelectItem>)}
+                        </Select>
+                        {machines.length > 20 && (
+                          <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, machines.length)} of {machines.length}. Refine search to find other options.</div>
+                        )}
+                      </div>
+                    ) : (
+                      s.id_machine_sys ? (machines.find(m => m && m.id_machine === s.id_machine_sys)?.name_machine || s.id_machine_sys) : '-'
+                    )}
+                  </TableCell>
                   <TableCell>{editing?.id_sys === s.id_sys ? (<TextInput value={editing.description_sys} onChange={e => setEditing({ ...editing, description_sys: e.target.value })} />) : (s.description_sys || '-')}</TableCell>
                   <TableCell>{s.deleted ? 'deleted' : 'active'}</TableCell>
                   <TableCell>

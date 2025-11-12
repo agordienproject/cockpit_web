@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
+import { info, error as logError } from "../utils/logger";
 
 declare module 'express-serve-static-core' {
     interface Request {
@@ -14,7 +15,7 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction): vo
     // attach a small request id to help trace a single request through middlewares
     const reqId = `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     (req as any).requestId = reqId;
-    console.log(`[${reqId}] Entering verifyToken for ${req.method} ${req.originalUrl}`);
+    info(`[${reqId}] verifyToken - Entering verifyToken for ${req.method} ${req.originalUrl}`);
 
     // Accept token from cookie (preferred) or Authorization header as fallback
     const cookieToken = (req as any).cookies?.token || req.cookies?.token;
@@ -23,22 +24,29 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction): vo
     if (cookieToken) token = cookieToken;
     else if (header && typeof header === 'string' && header.startsWith('Bearer ')) token = header.slice(7);
 
-    console.log(`[${reqId}] Token present:`, !!token);
+    info(`[${reqId}] verifyToken - Token present: ${!!token}`);
     if (!token) {
-        console.log(`[${reqId}] Token not found`);
+        info(`[${reqId}] verifyToken - Token not found`);
         res.status(401).json({ error: 'Access denied. No token provided.' });
         return;
     }
-    console.log(`[${reqId}] Verifying token`);
+    info(`[${reqId}] verifyToken - Verifying token`);
 
     try {
-        console.log(`[${reqId}] Decoding token`);
+        info(`[${reqId}] verifyToken - Decoding token`);
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
-        console.log(`[${reqId}] Valid token for user:`, (decoded as any)?.id ?? (decoded as any)?.sub ?? '<no-id>');
+        info(`[${reqId}] verifyToken - Valid token for user: ${(decoded as any)?.id ?? (decoded as any)?.sub ?? '<no-id>'}`);
         next();
     } catch (error) {
-        console.log(`[${reqId}] Invalid token:`, error?.message ?? error);
-        res.status(400).json({ error: 'Invalid token.' });
+        const errMsg = (error as any)?.message || error;
+        const errName = (error as any)?.name;
+        logError('verifyToken - Invalid token', { reqId, error: errMsg, name: errName, stack: (error as any)?.stack });
+        // Return 401 for expired tokens so clients can distinguish and take action (relogin / refresh)
+        if (errName === 'TokenExpiredError') {
+            res.status(401).json({ error: 'Token expired.' });
+            return;
+        }
+        res.status(401).json({ error: 'Invalid token.' });
     }
 };

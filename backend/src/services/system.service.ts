@@ -56,8 +56,19 @@ export const deleteSystemById = async (id: any, userId: any) => {
 // Referential for system types (DIM_TYPE_SYSTEM)
 
 // Export all enabled systems referential
-export const getAllRefSystems = async () => {
-  return await prismaPSQL.rEF_TYPE_SYSTEM.findMany({ where: { deleted: false } });
+export const getAllRefSystems = async (filters?: any) => {
+  const where: any = {};
+  if (!filters || !filters.status) where.deleted = false;
+  if (filters && filters.status) {
+    if (filters.status === 'deleted') where.deleted = true;
+    else if (filters.status === 'active') where.deleted = false;
+  }
+  if (filters) {
+    if (filters.id) where.id_type_sys = Number(filters.id);
+    if (filters.name) where.name_type_sys = { contains: String(filters.name), mode: 'insensitive' } as any;
+    if (filters.description) where.description_type_sys = { contains: String(filters.description), mode: 'insensitive' } as any;
+  }
+  return await prismaPSQL.rEF_TYPE_SYSTEM.findMany({ where });
 };
 
 // Export all disabled systems referential

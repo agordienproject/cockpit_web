@@ -54,8 +54,21 @@ export const deleteMachineById = async (id: any, userId: any) => {
 };
 
 // Referential for machine types
-export const getAllRefMachines = async () => {
-  return await prismaPSQL.rEF_TYPE_MACHINE.findMany({ where: { deleted: false } });
+export const getAllRefMachines = async (filters?: any) => {
+  const where: any = {};
+  // default: only active
+  if (!filters || !filters.status) where.deleted = false;
+  // if status explicitly provided
+  if (filters && filters.status) {
+    if (filters.status === 'deleted') where.deleted = true;
+    else if (filters.status === 'active') where.deleted = false;
+  }
+  if (filters) {
+    if (filters.id) where.id_type_machine = Number(filters.id);
+    if (filters.name) where.name_type_machine = { contains: String(filters.name), mode: 'insensitive' } as any;
+    if (filters.description) where.description_type_machine = { contains: String(filters.description), mode: 'insensitive' } as any;
+  }
+  return await prismaPSQL.rEF_TYPE_MACHINE.findMany({ where });
 };
 
 export const getRefMachineById = async (id: any) => {

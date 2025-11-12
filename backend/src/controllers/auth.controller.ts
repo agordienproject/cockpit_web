@@ -4,6 +4,23 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { info, error as logError } from "../utils/logger";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret_key';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
+const parseExpiresToMs = (val: string) => {
+    try {
+        if (/^\d+$/.test(val)) return parseInt(val, 10) * 1000; // seconds -> ms
+        const unit = val.slice(-1);
+        const num = parseInt(val.slice(0, -1), 10);
+        if (unit === 'd') return num * 24 * 60 * 60 * 1000;
+        if (unit === 'h') return num * 60 * 60 * 1000;
+        if (unit === 'm') return num * 60 * 1000;
+    } catch (e) {
+        // fallthrough
+    }
+    // default 7 days
+    return 7 * 24 * 60 * 60 * 1000;
+};
+const COOKIE_MAX_AGE_MS = process.env.COOKIE_MAX_AGE_MS ? parseInt(process.env.COOKIE_MAX_AGE_MS, 10) : parseExpiresToMs(JWT_EXPIRES_IN);
 
 const convertBigIntToString = (obj: any) => {
     return JSON.parse(JSON.stringify(obj, (_, value) =>
@@ -13,7 +30,7 @@ const convertBigIntToString = (obj: any) => {
 
 export const register = async (req: Request, res: Response) => {
     try {
-        info('auth.register - start', { params: req.params, body: req.body, user: req.user?.id });
+        info('auth.register - start');
         const response = await registerUser(req.body);
         info('auth.register - user registered', { id: (response as any)?.id_user });
         res.status(201).json(convertBigIntToString(response));
@@ -25,7 +42,7 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
     try {
-        info('auth.login - start', { params: req.params, body: req.body });
+        info('auth.login - start');
         let response = await authenticateUser(req.body);
         response = convertBigIntToString(response);
 
@@ -33,21 +50,21 @@ export const login = async (req: Request, res: Response) => {
         
         // Place token in cookies
         res.cookie("token", response.token, {
-            maxAge: 3600000,
+            maxAge: COOKIE_MAX_AGE_MS,
             httpOnly: true,
             secure: isProduction,
             sameSite: isProduction ? "none" : "lax"
         });
         // Add user ID to cookie
         res.cookie("userId", response.id_user, {
-            maxAge: 3600000,
+            maxAge: COOKIE_MAX_AGE_MS,
             httpOnly: true,
             secure: isProduction,
             sameSite: isProduction ? "none" : "lax"
         });
         // Add user role to cookie
         res.cookie("role", response.role, {
-            maxAge: 3600000,
+            maxAge: COOKIE_MAX_AGE_MS,
             httpOnly: true,
             secure: isProduction,
             sameSite: isProduction ? "none" : "lax"
@@ -94,13 +111,13 @@ export const refreshToken = async (req: Request, res: Response) => {
             const newToken = jwt.sign(
                 { id: decoded.id, role: decoded.role },
                 JWT_SECRET,
-                { expiresIn: "1h" }
+                { expiresIn: JWT_EXPIRES_IN }
             );
 
             // Set the new token in cookies
             const isProduction = process.env.NODE_ENV === 'prod';
             res.cookie("token", newToken, {
-                maxAge: 3600000,
+                maxAge: COOKIE_MAX_AGE_MS,
                 httpOnly: true,
                 secure: isProduction,
                 sameSite: isProduction ? "none" : "lax"

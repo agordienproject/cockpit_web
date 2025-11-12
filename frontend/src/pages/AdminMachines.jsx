@@ -18,6 +18,7 @@ import { machineService } from '../services';
 export default function AdminMachines() {
   const [machines, setMachines] = useState([]);
   const [types, setTypes] = useState([]);
+  const [typeQuery, setTypeQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -95,10 +96,18 @@ export default function AdminMachines() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Type</label>
+              <TextInput className="mb-2" placeholder="Search type..." value={typeQuery} onChange={e => setTypeQuery(e.target.value)} />
               <Select value={newItem.id_type_machine} onValueChange={val => setNewItem({ ...newItem, id_type_machine: val })}>
                 <SelectItem value={''}>None</SelectItem>
-                {types.filter(Boolean).map(t => <SelectItem key={t.id_type_machine} value={String(t.id_type_machine)}>{t.name_type_machine}</SelectItem>)}
+                {types
+                  .filter(Boolean)
+                  .filter(t => !typeQuery || (t.name_type_machine || '').toString().toLowerCase().includes(typeQuery.toLowerCase()))
+                  .slice(0, 20)
+                  .map(t => <SelectItem key={t.id_type_machine} value={String(t.id_type_machine)}>{t.name_type_machine}</SelectItem>)}
               </Select>
+              {types.length > 20 && (
+                <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, types.length)} of {types.length}. Refine search to find other options.</div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">OS</label>
@@ -147,7 +156,26 @@ export default function AdminMachines() {
                 <TableRow key={m.id_machine}>
                   <TableCell>{m.id_machine}</TableCell>
                   <TableCell>{editing?.id_machine === m.id_machine ? (<TextInput value={editing.name_machine} onChange={e => setEditing({ ...editing, name_machine: e.target.value })} />) : m.name_machine}</TableCell>
-                  <TableCell>{types.find(t => t && t.id_type_machine === m.id_type_machine)?.name_type_machine || '-'}</TableCell>
+                  <TableCell>
+                    {editing?.id_machine === m.id_machine ? (
+                      <div>
+                        <TextInput className="mb-2" placeholder="Search type..." value={typeQuery} onChange={e => setTypeQuery(e.target.value)} />
+                        <Select value={editing.id_type_machine} onValueChange={val => setEditing({ ...editing, id_type_machine: val })}>
+                          <SelectItem value={''}>None</SelectItem>
+                          {types
+                            .filter(Boolean)
+                            .filter(t => !typeQuery || (t.name_type_machine || '').toString().toLowerCase().includes(typeQuery.toLowerCase()))
+                            .slice(0, 20)
+                            .map(t => <SelectItem key={t.id_type_machine} value={String(t.id_type_machine)}>{t.name_type_machine}</SelectItem>)}
+                        </Select>
+                        {types.length > 20 && (
+                          <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, types.length)} of {types.length}. Refine search to find other options.</div>
+                        )}
+                      </div>
+                    ) : (
+                      types.find(t => t && t.id_type_machine === m.id_type_machine)?.name_type_machine || '-'
+                    )}
+                  </TableCell>
                   <TableCell>{editing?.id_machine === m.id_machine ? (<TextInput value={editing.os_machine} onChange={e => setEditing({ ...editing, os_machine: e.target.value })} />) : (m.os_machine || '-')}</TableCell>
                   <TableCell>{editing?.id_machine === m.id_machine ? (<TextInput value={editing.version_machine} onChange={e => setEditing({ ...editing, version_machine: e.target.value })} />) : (m.version_machine || '-')}</TableCell>
                   <TableCell>{editing?.id_machine === m.id_machine ? (<TextInput value={editing.url_metrics_machine} onChange={e => setEditing({ ...editing, url_metrics_machine: e.target.value })} />) : (m.url_metrics_machine || '-')}</TableCell>

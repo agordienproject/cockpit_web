@@ -11,13 +11,14 @@ import {
   TableCell,
   Button,
   TextInput,
+  Select,
+  SelectItem,
 } from '@tremor/react';
 import { machineService, systemService, serviceService } from '../services';
 
 export default function AdminRefList() {
   const { type } = useParams();
   const [items, setItems] = useState([]);
-  const [disabledItems, setDisabledItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -25,7 +26,11 @@ export default function AdminRefList() {
   const [showAdd, setShowAdd] = useState(false);
   const [newItem, setNewItem] = useState({ name: '', description: '' });
 
-  useEffect(() => { fetchAll(); }, [type]);
+  // Filters (per-column, like AdminUsers)
+  const [idFilter, setIdFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
+  const [descFilter, setDescFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   const getApi = () => {
     if (type === 'machines') return {
@@ -60,15 +65,33 @@ export default function AdminRefList() {
 
   const api = getApi();
 
-  const fetchAll = async () => {
+  const fetchAll = async (filters = {}) => {
     setLoading(true);
     try {
-      const data = await api.list();
+      const data = await api.list(filters);
       setItems(Array.isArray(data) ? data : (data?.data || []));
-      // clear disabled items when switching type or refreshing
-      setDisabledItems([]);
     } catch (err) { setError(err.message || 'Failed to load'); } finally { setLoading(false); }
   };
+
+  // Reset filters when switching referential type and fetch active by default
+  useEffect(() => {
+    setIdFilter(''); setNameFilter(''); setDescFilter(''); setStatusFilter('');
+    fetchAll();
+  }, [type]);
+
+  // When any filter changes, query server-side with debounce so deleted items are returned when requested
+  useEffect(() => {
+    const filters = {};
+    if (idFilter) filters.id = idFilter;
+    if (nameFilter) filters.name = nameFilter;
+    if (descFilter) filters.description = descFilter;
+    if (statusFilter) filters.status = statusFilter;
+
+    const t = setTimeout(() => {
+      fetchAll(filters);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [idFilter, nameFilter, descFilter, statusFilter, type]);
 
   const handleAdd = async () => {
     if (!newItem.name || newItem.name.trim() === '') {
@@ -80,9 +103,10 @@ export default function AdminRefList() {
       const payload = {};
       payload[api.nameField] = newItem.name;
       payload[api.descField] = newItem.description;
-  const created = await api.create(payload);
-  const normalized = Array.isArray(created) ? created[0] : (created?.data || created);
-  setItems([...items, normalized]);
+      const created = await api.create(payload);
+      const normalized = Array.isArray(created) ? created[0] : (created?.data || created);
+      // Refresh current view
+      fetchAll({ id: idFilter, name: nameFilter, description: descFilter, status: statusFilter });
       setShowAdd(false);
       setNewItem({ name: '', description: '' });
     } catch (err) { setError(err.message || 'Failed to add'); } finally { setSaving(false); }
@@ -124,30 +148,6 @@ export default function AdminRefList() {
         <Title>Referential: {type}</Title>
         <div className="flex items-center gap-2">
           <Button onClick={() => setShowAdd(true)}>Add</Button>
-          <Button
-            variant={"secondary"}
-            onClick={async () => {
-              // toggle and fetch disabled items when turning on
-              if (disabledItems.length === 0) {
-                setLoading(true);
-                try {
-                  if (type === 'machines') {
-                    const d = await machineService.getDisabledRefMachines();
-                    setDisabledItems(Array.isArray(d) ? d : (d?.data || []));
-                  } else if (type === 'systems') {
-                    const d = await systemService.getDisabledRefSystems();
-                    setDisabledItems(Array.isArray(d) ? d : (d?.data || []));
-                  } else if (type === 'services') {
-                    const d = await serviceService.getDisabledServices();
-                    setDisabledItems(Array.isArray(d) ? d : (d?.data || []));
-                  }
-                } catch (err) { setError(err.message || 'Failed to load disabled'); } finally { setLoading(false); }
-              } else {
-                // clear disabled view
-                setDisabledItems([]);
-              }
-            }}
-          >{disabledItems.length === 0 ? 'Show disabled' : 'Hide disabled'}</Button>
         </div>
       </div>
 
@@ -177,62 +177,100 @@ export default function AdminRefList() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeaderCell>ID</TableHeaderCell>
-              <TableHeaderCell>Name</TableHeaderCell>
-              <TableHeaderCell>Description</TableHeaderCell>
-              <TableHeaderCell>Status</TableHeaderCell>
+              <TableHeaderCell>
+                <div className="flex flex-col">
+                  ID
+                  <TextInput className="mt-1" placeholder="Search id..." value={idFilter} onChange={e => setIdFilter(e.target.value)} size="sm" />
+                </div>
+              </TableHeaderCell>
+              <TableHeaderCell>
+                <div className="flex flex-col">
+                  Name
+                  <TextInput className="mt-1" placeholder="Search name..." value={nameFilter} onChange={e => setNameFilter(e.target.value)} size="sm" />
+                </div>
+              </TableHeaderCell>
+              <TableHeaderCell>
+                <div className="flex flex-col">
+                  Description
+                  <TextInput className="mt-1" placeholder="Search description..." value={descFilter} onChange={e => setDescFilter(e.target.value)} size="sm" />
+                </div>
+              </TableHeaderCell>
+              <TableHeaderCell>
+                <div className="flex flex-col">
+                  Status
+                  <Select
+                    className="mt-1"
+                    value={statusFilter}
+                    onValueChange={setStatusFilter}
+                    size="sm"
+                  >
+                    <SelectItem value="">All</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="deleted">Deleted</SelectItem>
+                  </Select>
+                </div>
+              </TableHeaderCell>
               <TableHeaderCell>Actions</TableHeaderCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {(items.length === 0 && disabledItems.length === 0) ? (
+            {items.length === 0 ? (
               <TableRow><TableCell colSpan={5} className="text-center py-8 text-gray-500">No items found</TableCell></TableRow>
             ) : (
-              // merge active items with disabledItems (disabled items will have deleted=true)
-              [...items, ...disabledItems].map((it, idx) => (
-                <TableRow key={it ? it[api.idField] : `item-${idx}`}>
-                  <TableCell>{it ? it[api.idField] : '-'}</TableCell>
-                  <TableCell>{editing?.[api.idField] === (it ? it[api.idField] : null) ? (<TextInput value={editing[api.nameField]} onChange={e => setEditing({ ...editing, [api.nameField]: e.target.value })} />) : (it ? it[api.nameField] : '-')}</TableCell>
-                  <TableCell>{editing?.[api.idField] === (it ? it[api.idField] : null) ? (<TextInput value={editing[api.descField]} onChange={e => setEditing({ ...editing, [api.descField]: e.target.value })} />) : (it ? (it[api.descField] || '-') : '-')}</TableCell>
-                  <TableCell>{it.deleted ? 'deleted' : 'active'}</TableCell>
-                  <TableCell>
-                    {editing?.[api.idField] === it[api.idField] ? (
-                      <div className="flex gap-2">
-                        <Button variant="secondary" onClick={() => setEditing(null)} disabled={saving}>Cancel</Button>
-                        <Button onClick={handleUpdate} loading={saving} disabled={saving}>Save</Button>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <Button onClick={() => handleEdit(it)}>Edit</Button>
-                        {it.deleted ? (
-                          <Button
-                            onClick={async () => {
-                              if (!window.confirm('Reactivate this item?')) return;
-                              setSaving(true); setError(null);
-                              try {
-                                if (type === 'machines') {
-                                  await machineService.activateRefMachine(it[api.idField]);
-                                  setDisabledItems(disabledItems.filter(x => x[api.idField] !== it[api.idField]));
-                                } else if (type === 'systems') {
-                                  await systemService.activateRefSystem(it[api.idField]);
-                                  setDisabledItems(disabledItems.filter(x => x[api.idField] !== it[api.idField]));
-                                } else if (type === 'services') {
-                                  await serviceService.activateService(it[api.idField]);
-                                  setDisabledItems(disabledItems.filter(x => x[api.idField] !== it[api.idField]));
-                                }
-                                // remove deleted flag in items if present
-                                setItems(items.map(x => x && x[api.idField] === it[api.idField] ? { ...x, deleted: false } : x));
-                              } catch (err) { setError(err.message || 'Failed to reactivate'); } finally { setSaving(false); }
-                            }}
-                          >Reactivate</Button>
-                        ) : (
-                          <Button color="red" onClick={() => handleDelete(it)} disabled={saving}>{saving ? 'Deleting...' : 'Delete'}</Button>
-                        )}
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
+              // apply client-side filters like users page
+              items
+                .filter(it => {
+                  const idMatch = idFilter ? String(it?.[api.idField] ?? '').includes(idFilter) : true;
+                  const name = (it?.[api.nameField] ?? '').toString().toLowerCase();
+                  const desc = (it?.[api.descField] ?? '').toString().toLowerCase();
+                  const nameMatch = name.includes(nameFilter.toLowerCase());
+                  const descMatch = desc.includes(descFilter.toLowerCase());
+                  const status = it?.deleted ? 'deleted' : 'active';
+                  const statusMatch = statusFilter ? status === statusFilter : status === 'active';
+                  return idMatch && nameMatch && descMatch && statusMatch;
+                })
+                .map((it) => (
+                  <TableRow key={it ? it[api.idField] : `item-${it}`}>
+                    <TableCell>{it ? it[api.idField] : '-'}</TableCell>
+                    <TableCell>{editing?.[api.idField] === (it ? it[api.idField] : null) ? (<TextInput value={editing[api.nameField]} onChange={e => setEditing({ ...editing, [api.nameField]: e.target.value })} />) : (it ? it[api.nameField] : '-')}</TableCell>
+                    <TableCell>{editing?.[api.idField] === (it ? it[api.idField] : null) ? (<TextInput value={editing[api.descField]} onChange={e => setEditing({ ...editing, [api.descField]: e.target.value })} />) : (it ? (it[api.descField] || '-') : '-')}</TableCell>
+                    <TableCell>{it.deleted ? 'deleted' : 'active'}</TableCell>
+                    <TableCell>
+                      {editing?.[api.idField] === it[api.idField] ? (
+                        <div className="flex gap-2">
+                          <Button variant="secondary" onClick={() => setEditing(null)} disabled={saving}>Cancel</Button>
+                          <Button onClick={handleUpdate} loading={saving} disabled={saving}>Save</Button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Button onClick={() => handleEdit(it)}>Edit</Button>
+                          {it.deleted ? (
+                            <Button
+                              color="emerald"
+                              onClick={async () => {
+                                if (!window.confirm('Reactivate this item?')) return;
+                                setSaving(true); setError(null);
+                                try {
+                                  if (type === 'machines') {
+                                    await machineService.activateRefMachine(it[api.idField]);
+                                  } else if (type === 'systems') {
+                                    await systemService.activateRefSystem(it[api.idField]);
+                                  } else if (type === 'services') {
+                                    await serviceService.activateService(it[api.idField]);
+                                  }
+                                  // remove deleted flag in items if present
+                                  setItems(items.map(x => x && x[api.idField] === it[api.idField] ? { ...x, deleted: false } : x));
+                                } catch (err) { setError(err.message || 'Failed to reactivate'); } finally { setSaving(false); }
+                              }}
+                            >Reactivate</Button>
+                          ) : (
+                            <Button color="red" onClick={() => handleDelete(it)} disabled={saving}>{saving ? 'Deleting...' : 'Delete'}</Button>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
             )}
           </TableBody>
         </Table>

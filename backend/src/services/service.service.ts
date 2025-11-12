@@ -1,7 +1,18 @@
 import { prismaPSQL } from "../prisma/client_psql";
 
-export const getAllServices = async () => {
-  return await prismaPSQL.rEF_SERVICE.findMany({ where: { deleted: false } });
+export const getAllServices = async (filters?: any) => {
+  const where: any = {};
+  if (!filters || !filters.status) where.deleted = false;
+  if (filters && filters.status) {
+    if (filters.status === 'deleted') where.deleted = true;
+    else if (filters.status === 'active') where.deleted = false;
+  }
+  if (filters) {
+    if (filters.id) where.id_service = Number(filters.id);
+    if (filters.name) where.name_service = { contains: String(filters.name), mode: 'insensitive' } as any;
+    if (filters.description) where.description_service = { contains: String(filters.description), mode: 'insensitive' } as any;
+  }
+  return await prismaPSQL.rEF_SERVICE.findMany({ where });
 };
 
 export const getServiceById = async (id: any) => {

@@ -19,6 +19,8 @@ export default function AdminWorkers() {
   const [workers, setWorkers] = useState([]);
   const [machines, setMachines] = useState([]);
   const [systems, setSystems] = useState([]);
+  const [systemQuery, setSystemQuery] = useState('');
+  const [machineQuery, setMachineQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -99,17 +101,33 @@ export default function AdminWorkers() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">System</label>
+              <TextInput className="mb-2" placeholder="Search system..." value={systemQuery} onChange={e => setSystemQuery(e.target.value)} />
               <Select value={newItem.id_sys} onValueChange={val => setNewItem({ ...newItem, id_sys: val })}>
                 <SelectItem value={''}>None</SelectItem>
-                {systems.map(s => <SelectItem key={s.id_sys} value={String(s.id_sys)}>{s.name_sys}</SelectItem>)}
+                {systems
+                  .filter(Boolean)
+                  .filter(s => !systemQuery || (s.name_sys || '').toString().toLowerCase().includes(systemQuery.toLowerCase()))
+                  .slice(0, 20)
+                  .map(s => <SelectItem key={s.id_sys} value={String(s.id_sys)}>{s.name_sys}</SelectItem>)}
               </Select>
+              {systems.length > 20 && (
+                <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, systems.length)} of {systems.length}. Refine search to find other options.</div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Machine</label>
+              <TextInput className="mb-2" placeholder="Search machine..." value={machineQuery} onChange={e => setMachineQuery(e.target.value)} />
               <Select value={newItem.id_machine} onValueChange={val => setNewItem({ ...newItem, id_machine: val })}>
                 <SelectItem value={''}>None</SelectItem>
-                {machines.map(m => <SelectItem key={m.id_machine} value={String(m.id_machine)}>{m.name_machine}</SelectItem>)}
+                {machines
+                  .filter(Boolean)
+                  .filter(m => !machineQuery || (m.name_machine || '').toString().toLowerCase().includes(machineQuery.toLowerCase()))
+                  .slice(0, 20)
+                  .map(m => <SelectItem key={m.id_machine} value={String(m.id_machine)}>{m.name_machine}</SelectItem>)}
               </Select>
+              {machines.length > 20 && (
+                <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, machines.length)} of {machines.length}. Refine search to find other options.</div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Description</label>
@@ -150,8 +168,46 @@ export default function AdminWorkers() {
                       w.name_worker
                     )}
                   </TableCell>
-                  <TableCell>{w.id_sys ? (systems.find(s => s.id_sys === w.id_sys)?.name_sys || w.id_sys) : '-'}</TableCell>
-                  <TableCell>{w.id_machine ? (machines.find(m => m.id_machine === w.id_machine)?.name_machine || w.id_machine) : '-'}</TableCell>
+                  <TableCell>
+                    {editing?.id_worker === w.id_worker ? (
+                      <div>
+                        <TextInput className="mb-2" placeholder="Search system..." value={systemQuery} onChange={e => setSystemQuery(e.target.value)} />
+                        <Select value={editing.id_sys} onValueChange={val => setEditing({ ...editing, id_sys: val })}>
+                          <SelectItem value={''}>None</SelectItem>
+                          {systems
+                            .filter(Boolean)
+                            .filter(s => !systemQuery || (s.name_sys || '').toString().toLowerCase().includes(systemQuery.toLowerCase()))
+                            .slice(0, 20)
+                            .map(s => <SelectItem key={s.id_sys} value={String(s.id_sys)}>{s.name_sys}</SelectItem>)}
+                        </Select>
+                        {systems.length > 20 && (
+                          <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, systems.length)} of {systems.length}. Refine search to find other options.</div>
+                        )}
+                      </div>
+                    ) : (
+                      w.id_sys ? (systems.find(s => s.id_sys === w.id_sys)?.name_sys || w.id_sys) : '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editing?.id_worker === w.id_worker ? (
+                      <div>
+                        <TextInput className="mb-2" placeholder="Search machine..." value={machineQuery} onChange={e => setMachineQuery(e.target.value)} />
+                        <Select value={editing.id_machine} onValueChange={val => setEditing({ ...editing, id_machine: val })}>
+                          <SelectItem value={''}>None</SelectItem>
+                          {machines
+                            .filter(Boolean)
+                            .filter(m => !machineQuery || (m.name_machine || '').toString().toLowerCase().includes(machineQuery.toLowerCase()))
+                            .slice(0, 20)
+                            .map(m => <SelectItem key={m.id_machine} value={String(m.id_machine)}>{m.name_machine}</SelectItem>)}
+                        </Select>
+                        {machines.length > 20 && (
+                          <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, machines.length)} of {machines.length}. Refine search to find other options.</div>
+                        )}
+                      </div>
+                    ) : (
+                      w.id_machine ? (machines.find(m => m.id_machine === w.id_machine)?.name_machine || w.id_machine) : '-'
+                    )}
+                  </TableCell>
                   <TableCell>{editing?.id_worker === w.id_worker ? (
                     <TextInput value={editing.description_worker} onChange={e => setEditing({ ...editing, description_worker: e.target.value })} />
                   ) : (

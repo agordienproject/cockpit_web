@@ -6,8 +6,9 @@ const convertBigIntToString = (obj: any) => JSON.parse(JSON.stringify(obj, (_, v
 
 export const getAllServicesInfos = async (_req: Request, res: Response) => {
   try {
-    info('service.getAllServicesInfos - start');
-    const resp = await serviceService.getAllServices();
+    const filters = (_req.query || {});
+    info('service.getAllServicesInfos - start', { filters });
+    const resp = await serviceService.getAllServices(filters as any);
     info('service.getAllServicesInfos - success', { count: Array.isArray(resp) ? resp.length : undefined });
     res.status(200).json(convertBigIntToString(resp));
   } catch (error: any) {

@@ -26,8 +26,14 @@ export const deleteSystem = async (id) => {
 };
 
 // Referential endpoints for system types
-export const getAllRefSystems = async () => {
-  const resp = await api.get('/systems/sys-ref');
+export const getAllRefSystems = async (filters = null) => {
+  let url = '/systems/sys-ref';
+  if (filters && Object.keys(filters).length > 0) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') params.append(k, String(v)); });
+    url += `?${params.toString()}`;
+  }
+  const resp = await api.get(url);
   return resp.data;
 };
 

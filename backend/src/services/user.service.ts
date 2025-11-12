@@ -1,6 +1,6 @@
 import { prismaPSQL } from "../prisma/client_psql";
-import { fixUserIdSequence } from "../utils/db-fixes";
 import bcrypt from "bcryptjs";
+import { info, error as logError } from "../utils/logger";
 
 
 const SALT_ROUNDS = process.env.SALT_ROUNDS ? parseInt(process.env.SALT_ROUNDS) : 12;
@@ -34,48 +34,24 @@ export const registerUser = async (data: any) => {
             throw new Error("Invalid role.");
         }
 
-        try {
-            console.log("Creating user...");
-            // User creation
-            const response = await prismaPSQL.dIM_USER.create({
-                data: {
-                    first_name: data.first_name,
-                    last_name: data.last_name,
-                    pseudo: data.pseudo,
-                    email: data.email,
-                    password: hashedPassword,
-                    role: data.role,
-                    id_service: data.id_service ? parseInt(data.id_service) : undefined,
-                },
-            });
-            if (!response) throw new Error("Error while creating user.");
-            console.log("User created: ", response);
-            return response;
-        } catch (createError: any) {
-            // If we get a unique constraint error on id_user, try to fix the sequence and retry
-            if (createError.code === 'P2002' && createError.meta?.target?.includes('id_user')) {
-                console.log("Attempting to fix user ID sequence...");
-                await fixUserIdSequence();
-                // Retry the creation
-                const response = await prismaPSQL.dIM_USER.create({
-                    data: {
-                        first_name: data.first_name,
-                        last_name: data.last_name,
-                        pseudo: data.pseudo,
-                        email: data.email,
-                        password: hashedPassword,
-                        role: data.role,
-                        id_service: data.id_service ? parseInt(data.id_service) : undefined,
-                    },
-                });
-                if (!response) throw new Error("Error while creating user.");
-                console.log("User created after sequence fix: ", response);
-                return response;
-            }
-            throw createError;
-        }
+        info('user.registerUser - creating user', { email: data.email });
+        // User creation
+        const response = await prismaPSQL.dIM_USER.create({
+            data: {
+            first_name: data.first_name,
+            last_name: data.last_name,
+            pseudo: data.pseudo,
+            email: data.email,
+            password: hashedPassword,
+            role: data.role,
+            id_service: data.id_service ? parseInt(data.id_service) : undefined,
+            },
+        });
+        if (!response) throw new Error("Error while creating user.");
+        info('user.registerUser - created', { id: (response as any)?.id_user, email: response.email });
+        return response;
     } catch (error) {
-        console.error("Error while creating user:", error);
+        logError('user.registerUser - error', { error: (error as any)?.message || error, stack: (error as any)?.stack });
         if (error.message === "Email already in use.") {
             throw new Error("Email already in use.");
         }
@@ -184,7 +160,7 @@ export const deleteUserById = async (id: any) => {
         where: { id_user: id },
         data: { deleted: true },
     });
-    console.log(`User with id ${id} has been deleted (soft delete).`);
+    info('user.deleteUserById - soft deleted', { id });
 
     return user;
 };
@@ -205,7 +181,7 @@ export const activateUserById = async (id: any) => {
         where: { id_user: id },
         data: { deleted: false },
     });
-    console.log(`User with id ${id} has been reactivated.`);
+    info('user.activateUserById - reactivated', { id });
 
     return updatedUser;
 }

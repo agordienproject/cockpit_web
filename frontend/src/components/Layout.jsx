@@ -28,14 +28,14 @@ export default function Layout({ children, userRole }) {
   const navigation = [
     // Main home/overview
     { name: 'Home', href: '/dashboard', icon: HomeIcon },
-    // Changed icons: Systems -> document-like icon, Machines -> desktop/screen, Workers -> gear
-    { name: 'Systems', href: '/systems', icon: ClipboardDocumentCheckIcon },
+  // Changed icons: Systems -> gear (system settings), Machines -> desktop/screen, Workers -> gear
+  { name: 'Systems', href: '/systems', icon: Cog6ToothIcon },
     { name: 'Machines', href: '/machines', icon: ComputerDesktopIcon },
     { name: 'Workers', href: '/workers', icon: Cog6ToothIcon },
     { name: 'Profile', href: '/profile', icon: UserIcon },
     ...(userRole === 'admin' ? [
       { name: 'Manage Users', href: '/admin/users', icon: UsersIcon },
-      { name: 'Referentials', href: '/admin/ref', icon: ClipboardDocumentCheckIcon }
+      { name: 'Referentials', href: '/admin/ref', icon: UsersIcon }
     ] : []),
   ];
 

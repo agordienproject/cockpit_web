@@ -1,7 +1,13 @@
 import api from './api';
 
-export const getAllServices = async () => {
-  const resp = await api.get('/users/services');
+export const getAllServices = async (filters = null) => {
+  let url = '/users/services';
+  if (filters && Object.keys(filters).length > 0) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') params.append(k, String(v)); });
+    url += `?${params.toString()}`;
+  }
+  const resp = await api.get(url);
   return resp.data;
 };
 

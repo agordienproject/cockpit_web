@@ -27,7 +27,12 @@ export default function Workers() {
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Workers</h1>
         {role === 'admin' && (
-          <Link to="/admin/workers" className="text-sm bg-indigo-600 text-white px-3 py-1 rounded shadow-sm hover:bg-indigo-700">Manage</Link>
+          <Link
+            to="/admin/workers"
+            className="inline-flex items-center gap-2 text-sm bg-indigo-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            Manage
+          </Link>
         )}
       </div>
 
@@ -40,7 +45,7 @@ export default function Workers() {
                 <div className="font-semibold">{w.name_worker}</div>
                 <div className="text-sm text-gray-500">System: {w.id_sys || '-'}, Machine: {w.id_machine || '-'}</div>
               </div>
-              <Link to={`/workers/${w.id_worker}`} className="text-indigo-600 hover:underline">Details</Link>
+              <Link to={`/workers/${w.id_worker}`} className="text-sm text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded">Details</Link>
             </div>
           </div>
         ))}

@@ -8,6 +8,7 @@ import verifRoutes from "./routes/verif.routes";
 import workerRoutes from "./routes/worker.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import cors from "cors";
+import { info } from "./utils/logger";
 
 const app = express();
 
@@ -32,7 +33,7 @@ app.use("/api/dashboards", dashboardRoutes);
 app.use("/api/workers", workerRoutes);
 
 app.use("/api", (req, res) => {
-  console.log(`API Request: ${req.method} ${req.originalUrl}`);
+  info(`app.api - API Request: ${req.method} ${req.originalUrl}`);
   res.status(200).json({ message: "API Request Logged" });
 });
   

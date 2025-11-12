@@ -79,10 +79,11 @@ export const deleteSystemInfos = async (req: Request, res: Response) => {
 // Referential endpoints
 export const getAllRefSystemsInfos = async (req: Request, res: Response) => {
     try {
-        info('system.getAllRefSystemsInfos - start');
-        const resp = await systemService.getAllRefSystems();
-        info('system.getAllRefSystemsInfos - success', { count: Array.isArray(resp) ? resp.length : undefined });
-        res.status(200).json(convertBigIntToString(resp));
+           const filters = req.query || {};
+           info('system.getAllRefSystemsInfos - start', { filters });
+           const resp = await systemService.getAllRefSystems(filters as any);
+           info('system.getAllRefSystemsInfos - success', { count: Array.isArray(resp) ? resp.length : undefined });
+           res.status(200).json(convertBigIntToString(resp));
     } catch (error: any) {
         logError('system.getAllRefSystemsInfos - error', { error: error?.message || error });
         res.status(500).json({ error: error.message });

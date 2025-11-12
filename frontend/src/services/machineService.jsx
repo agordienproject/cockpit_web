@@ -26,8 +26,14 @@ export const deleteMachine = async (id) => {
 };
 
 // Referential endpoints for machine types
-export const getAllRefMachines = async () => {
-  const resp = await api.get('/machines/machine-ref');
+export const getAllRefMachines = async (filters = null) => {
+  let url = '/machines/machine-ref';
+  if (filters && Object.keys(filters).length > 0) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') params.append(k, String(v)); });
+    url += `?${params.toString()}`;
+  }
+  const resp = await api.get(url);
   return resp.data;
 };
 

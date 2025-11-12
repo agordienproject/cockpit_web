@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import { Request, Response, NextFunction } from "express";
 import { JwtPayload } from 'jsonwebtoken';
 import { prismaPSQL } from '../prisma/client_psql';
+import { info, error as logError } from "../utils/logger";
 
 config();
 
@@ -12,25 +13,25 @@ export const verifyRole = (req: Request, res: Response, next: NextFunction): voi
         const reqId = (req as any).requestId || '<no-reqId>';
         const user: any = (req as any).user;
         if (!user) {
-            console.log(`[${reqId}] Access denied: no user on request (missing or invalid token) for ${req.method} ${req.originalUrl}`);
+            info(`[${reqId}] verifyRole - Access denied: no user on request (missing or invalid token) for ${req.method} ${req.originalUrl}`);
             // also log headers to help diagnose missing cookies/authorization
-            console.log(`[${reqId}] Headers present: Authorization=${!!req.headers?.authorization} Cookie=${!!req.headers?.cookie}`);
+            info(`[${reqId}] verifyRole - Headers present: Authorization=${!!req.headers?.authorization} Cookie=${!!req.headers?.cookie}`);
             res.status(401).json({ error: "Unauthorized: no user information" });
             return;
         }
 
         const role = user.role;
-        console.log(`[${reqId}] User role: `, role);
+    info(`[${reqId}] verifyRole - User role: ${role}`);
         // Allow admin, chief and regular users for protected routes; more specific checks (referentials/users) use requireAdmin
         if (role !== "admin" && role !== "chief" && role !== "user") {
-            console.log(`[${reqId}] Access denied: unauthorized role!`, role);
+            info(`[${reqId}] verifyRole - Access denied: unauthorized role=${role}`);
             res.status(403).json({ error: "Forbidden: Bad Role" });
             return;
         }
 
         next();
     } catch (error) {
-        console.error('Error in verifyRole middleware:', error);
+        logError('verifyRole - error', { error: (error as any)?.message || error, stack: (error as any)?.stack });
         res.status(403).json({ error: "Forbidden: Bad Role" });
     }
 }
@@ -40,13 +41,13 @@ export const verifyUserId = (req: Request, res: Response, next: NextFunction): v
     try {
         const user: any = (req as any).user;
         if (!user) {
-            console.log('Access denied: no user on request (missing or invalid token)');
+            info('verifyUserId - Access denied: no user on request (missing or invalid token)');
             res.status(401).json({ error: 'Unauthorized: no user information' });
             return;
         }
 
         const role = user.role;
-        console.log("User role: ", role);
+    info(`verifyUserId - User role: ${role}`);
 
         // Admins can proceed for any id
         if (role === "admin") {
@@ -58,14 +59,14 @@ export const verifyUserId = (req: Request, res: Response, next: NextFunction): v
         const userId = String(user.id);
         const paramId = String(req.params.id);
         if (userId !== paramId) {
-            console.log("Access denied: unauthorized user ID! userId=%s paramId=%s", userId, paramId);
+            info(`verifyUserId - Access denied: unauthorized user ID! userId=${userId} paramId=${paramId}`);
             res.status(403).json({ error: "Forbidden: Bad User ID" });
             return;
         }
 
         next();
     } catch (error) {
-        console.error('Error in verifyUserId middleware:', error);
+        logError('verifyUserId - error', { error: (error as any)?.message || error, stack: (error as any)?.stack });
         res.status(403).json({ error: "Forbidden: Bad User ID" });
     }
 }
@@ -76,20 +77,20 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction): v
         const reqId = (req as any).requestId || '<no-reqId>';
         const user: any = (req as any).user;
         if (!user) {
-            console.log(`[${reqId}] requireAdmin: no user on request`);
+            info(`[${reqId}] requireAdmin - no user on request`);
             res.status(401).json({ error: 'Unauthorized: no user information' });
             return;
         }
 
         if (user.role !== 'admin') {
-            console.log(`[${reqId}] requireAdmin: access denied for role=${user.role}`);
+            info(`[${reqId}] requireAdmin - access denied for role=${user.role}`);
             res.status(403).json({ error: 'Forbidden: Admins only' });
             return;
         }
 
         next();
     } catch (error) {
-        console.error('Error in requireAdmin middleware:', error);
+        logError('requireAdmin - error', { error: (error as any)?.message || error, stack: (error as any)?.stack });
         res.status(500).json({ error: 'Server error' });
     }
 }
@@ -100,18 +101,18 @@ export const requireAdminOrChief = (req: Request, res: Response, next: NextFunct
         const reqId = (req as any).requestId || '<no-reqId>';
         const user: any = (req as any).user;
         if (!user) {
-            console.log(`[${reqId}] requireAdminOrChief: no user on request`);
+            info(`[${reqId}] requireAdminOrChief - no user on request`);
             res.status(401).json({ error: 'Unauthorized: no user information' });
             return;
         }
         if (user.role !== 'admin' && user.role !== 'chief') {
-            console.log(`[${reqId}] requireAdminOrChief: access denied for role=${user.role}`);
+            info(`[${reqId}] requireAdminOrChief - access denied for role=${user.role}`);
             res.status(403).json({ error: 'Forbidden: Admins or Chiefs only' });
             return;
         }
         next();
     } catch (error) {
-        console.error('Error in requireAdminOrChief middleware:', error);
+        logError('requireAdminOrChief - error', { error: (error as any)?.message || error, stack: (error as any)?.stack });
         res.status(500).json({ error: 'Server error' });
     }
 }
@@ -122,7 +123,7 @@ export const verifySystemServiceAccess = async (req: Request, res: Response, nex
         const reqId = (req as any).requestId || '<no-reqId>';
         const user: any = (req as any).user;
         if (!user) {
-            console.log(`[${reqId}] verifySystemServiceAccess: no user on request`);
+            info(`[${reqId}] verifySystemServiceAccess - no user on request`);
             res.status(401).json({ error: 'Unauthorized' });
             return;
         }
@@ -134,7 +135,7 @@ export const verifySystemServiceAccess = async (req: Request, res: Response, nex
         // user.role === 'user'
         const userServiceId = user.id_service ? Number(user.id_service) : null;
         if (!userServiceId) {
-            console.log(`[${reqId}] verifySystemServiceAccess: user has no service assigned`);
+            info(`[${reqId}] verifySystemServiceAccess - user has no service assigned`);
             res.status(403).json({ error: 'Forbidden: No service assigned to user' });
             return;
         }
@@ -142,7 +143,7 @@ export const verifySystemServiceAccess = async (req: Request, res: Response, nex
         if (req.method === 'POST') {
             const bodyService = req.body?.id_service_sys ? Number(req.body.id_service_sys) : null;
             if (bodyService && bodyService === userServiceId) return next();
-            console.log(`[${reqId}] verifySystemServiceAccess: POST denied - bodyService=${bodyService} userService=${userServiceId}`);
+            info(`[${reqId}] verifySystemServiceAccess - POST denied - bodyService=${bodyService} userService=${userServiceId}`);
             res.status(403).json({ error: 'Forbidden: cannot create system for this service' });
             return;
         }
@@ -156,10 +157,10 @@ export const verifySystemServiceAccess = async (req: Request, res: Response, nex
         }
         const sysService = sys.id_service_sys ? Number(sys.id_service_sys) : null;
         if (sysService === userServiceId) return next();
-        console.log(`[${reqId}] verifySystemServiceAccess: PUT/DELETE denied - sysService=${sysService} userService=${userServiceId}`);
+        info(`[${reqId}] verifySystemServiceAccess - PUT/DELETE denied - sysService=${sysService} userService=${userServiceId}`);
         res.status(403).json({ error: 'Forbidden: cannot modify/delete system for this service' });
     } catch (error) {
-        console.error('Error in verifySystemServiceAccess middleware:', error);
+        logError('verifySystemServiceAccess - error', { error: (error as any)?.message || error, stack: (error as any)?.stack });
         res.status(500).json({ error: 'Server error' });
     }
 }
@@ -170,7 +171,7 @@ export const verifyWorkerServiceAccess = async (req: Request, res: Response, nex
         const reqId = (req as any).requestId || '<no-reqId>';
         const user: any = (req as any).user;
         if (!user) {
-            console.log(`[${reqId}] verifyWorkerServiceAccess: no user on request`);
+            info(`[${reqId}] verifyWorkerServiceAccess - no user on request`);
             res.status(401).json({ error: 'Unauthorized' });
             return;
         }
@@ -181,7 +182,7 @@ export const verifyWorkerServiceAccess = async (req: Request, res: Response, nex
 
         const userServiceId = user.id_service ? Number(user.id_service) : null;
         if (!userServiceId) {
-            console.log(`[${reqId}] verifyWorkerServiceAccess: user has no service assigned`);
+            info(`[${reqId}] verifyWorkerServiceAccess - user has no service assigned`);
             res.status(403).json({ error: 'Forbidden: No service assigned to user' });
             return;
         }
@@ -196,7 +197,7 @@ export const verifyWorkerServiceAccess = async (req: Request, res: Response, nex
 
             const sysService = sys?.id_service_sys ? Number(sys.id_service_sys) : null;
             if (sysService && sysService === userServiceId) return next();
-            console.log(`[${reqId}] verifyWorkerServiceAccess: POST denied - sysService=${sysService} userService=${userServiceId}`);
+            info(`[${reqId}] verifyWorkerServiceAccess - POST denied - sysService=${sysService} userService=${userServiceId}`);
             res.status(403).json({ error: 'Forbidden: cannot create worker for this service' });
             return;
         }
@@ -210,10 +211,10 @@ export const verifyWorkerServiceAccess = async (req: Request, res: Response, nex
         else if (worker.id_machine) sys = await prismaPSQL.dIM_SYSTEM.findFirst({ where: { id_machine_sys: worker.id_machine, deleted: false } });
         const sysService = sys?.id_service_sys ? Number(sys.id_service_sys) : null;
         if (sysService === userServiceId) return next();
-        console.log(`[${reqId}] verifyWorkerServiceAccess: PUT/DELETE denied - sysService=${sysService} userService=${userServiceId}`);
+        info(`[${reqId}] verifyWorkerServiceAccess - PUT/DELETE denied - sysService=${sysService} userService=${userServiceId}`);
         res.status(403).json({ error: 'Forbidden: cannot modify/delete worker for this service' });
     } catch (error) {
-        console.error('Error in verifyWorkerServiceAccess middleware:', error);
+        logError('verifyWorkerServiceAccess - error', { error: (error as any)?.message || error, stack: (error as any)?.stack });
         res.status(500).json({ error: 'Server error' });
     }
 }

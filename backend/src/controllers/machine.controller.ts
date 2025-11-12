@@ -84,8 +84,9 @@ export const deleteMachineInfos = async (req: Request, res: Response) => {
 // Referential endpoints
 export const getAllRefMachinesInfos = async (req: Request, res: Response) => {
     try {
-        info('machine.getAllRefMachinesInfos - start');
-        const resp = await machineService.getAllRefMachines();
+        const filters = req.query || {};
+        info('machine.getAllRefMachinesInfos - start', { filters });
+        const resp = await machineService.getAllRefMachines(filters as any);
         info('machine.getAllRefMachinesInfos - success', { count: Array.isArray(resp) ? resp.length : undefined });
         res.status(200).json(convertBigIntToString(resp));
     } catch (error: any) {

@@ -20,11 +20,12 @@ router.post("/services", requireAdmin, serviceController.createServiceInfos);   
 router.put("/services/:id", requireAdmin, serviceController.updateServiceInfos);      // Route to update service
 router.delete("/services/:id", requireAdmin, serviceController.deleteServiceInfos);          // Route to delete service by id
 
-router.get("/:id", userController.getUserInfos);                                   // Route to get user information by id
+router.get("/:id", userController.getUserInfos);                                     // Route to get user information by id
 // User management: only admin can create/modify/delete users
 router.post("/", requireAdmin, userController.createUser);                           // Route to create user
-router.put("/:id", verifyUserId, userController.updateUserProfile);                // Route to update user profile (info and/or password)
+router.put("/:id", verifyUserId, userController.updateUserProfile);                  // Route to update user profile (info and/or password)
 router.put("/:id/role", requireAdmin, userController.modifyUserRole);                // Route to modify user role by id
 router.delete("/:id", requireAdmin, userController.deleteUser);                      // Route to delete user by id
+router.put("/:id/activate", requireAdmin, userController.activateUser);              // Route to activate user by id
 
 export default router;

@@ -23,6 +23,7 @@ export default function AdminUsers() {
   const [error, setError] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
   const [services, setServices] = useState([]);
+  const [serviceQuery, setServiceQuery] = useState('');
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({
     first_name: '',
@@ -260,16 +261,24 @@ export default function AdminUsers() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Service</label>
+              <TextInput className="mb-2" placeholder="Search service..." value={serviceQuery} onChange={e => setServiceQuery(e.target.value)} />
               <Select
                 value={newUser.id_service}
                 onValueChange={(value) => setNewUser({ ...newUser, id_service: value })}
                 disabled={saving}
               >
                 <SelectItem value={''}>None</SelectItem>
-                {services.filter(Boolean).map(s => (
-                  <SelectItem key={s.id_service} value={String(s.id_service)}>{s.name_service}</SelectItem>
-                ))}
+                {services
+                  .filter(Boolean)
+                  .filter(s => !serviceQuery || (s.name_service || '').toString().toLowerCase().includes(serviceQuery.toLowerCase()))
+                  .slice(0, 20)
+                  .map(s => (
+                    <SelectItem key={s.id_service} value={String(s.id_service)}>{s.name_service}</SelectItem>
+                  ))}
               </Select>
+              {services.length > 20 && (
+                <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, services.length)} of {services.length}. Refine search to find other options.</div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Password</label>
@@ -441,17 +450,27 @@ export default function AdminUsers() {
                   </TableCell>
                   <TableCell>
                     {editingUser?.id_user === user.id_user ? (
-                      <Select
-                        className="mt-1 w-full"
-                        value={editingUser.id_service}
-                        onValueChange={(value) => setEditingUser({ ...editingUser, id_service: value })}
-                        disabled={saving}
-                      >
-                        <SelectItem value={''}>None</SelectItem>
-                        {services.filter(Boolean).map(s => (
-                          <SelectItem key={s.id_service} value={String(s.id_service)}>{s.name_service}</SelectItem>
-                        ))}
-                      </Select>
+                      <div>
+                        <TextInput className="mb-2" placeholder="Search service..." value={serviceQuery} onChange={e => setServiceQuery(e.target.value)} />
+                        <Select
+                          className="mt-1 w-full"
+                          value={editingUser.id_service}
+                          onValueChange={(value) => setEditingUser({ ...editingUser, id_service: value })}
+                          disabled={saving}
+                        >
+                          <SelectItem value={''}>None</SelectItem>
+                          {services
+                            .filter(Boolean)
+                            .filter(s => !serviceQuery || (s.name_service || '').toString().toLowerCase().includes(serviceQuery.toLowerCase()))
+                            .slice(0, 20)
+                            .map(s => (
+                              <SelectItem key={s.id_service} value={String(s.id_service)}>{s.name_service}</SelectItem>
+                            ))}
+                        </Select>
+                        {services.length > 20 && (
+                          <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, services.length)} of {services.length}. Refine search to find other options.</div>
+                        )}
+                      </div>
                     ) : (
                       services.find(s => s && s.id_service === user.id_service)?.name_service || '-'
                     )}
