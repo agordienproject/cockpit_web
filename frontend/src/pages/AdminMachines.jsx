@@ -25,6 +25,8 @@ export default function AdminMachines() {
   const [editing, setEditing] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [newItem, setNewItem] = useState({ name_machine: '', id_type_machine: '', os_machine: '', version_machine: '', description_machine: '', url_metrics_machine: '' });
+  const [testLoading, setTestLoading] = useState(false);
+  const [testResult, setTestResult] = useState(null); // { ok, status, latencyMs, error }
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -51,9 +53,26 @@ export default function AdminMachines() {
       setMachines([...machines, created]);
       setShowAdd(false);
       setNewItem({ name_machine: '', id_type_machine: '', os_machine: '', version_machine: '', description_machine: '', url_metrics_machine: '' });
+      setTestResult(null);
     } catch (err) {
       setError(err.message || 'Failed to add machine');
     } finally { setSaving(false); }
+  };
+
+  const handleTestUrl = async () => {
+    setError(null);
+    setTestResult(null);
+    const url = newItem.url_metrics_machine?.trim();
+    if (!url) { setError('Enter a metrics URL first'); return; }
+    setTestLoading(true);
+    try {
+      console.log('AdminMachines - testing URL:', url);
+      const resp = await machineService.testExporterUrl(url);
+      // Expecting shape { ok: boolean, status?: number, latencyMs?: number, error?: string }
+      setTestResult(resp);
+    } catch (err) {
+      setTestResult({ ok: false, error: err.message || 'Request failed' });
+    } finally { setTestLoading(false); }
   };
 
   const handleEdit = (m) => setEditing({ ...m });
@@ -119,7 +138,21 @@ export default function AdminMachines() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">URL Metrics</label>
-              <TextInput value={newItem.url_metrics_machine} onChange={e => setNewItem({ ...newItem, url_metrics_machine: e.target.value })} disabled={saving} />
+              <div className="flex gap-2">
+                <TextInput className="flex-1" value={newItem.url_metrics_machine} onChange={e => setNewItem({ ...newItem, url_metrics_machine: e.target.value })} disabled={saving || testLoading} />
+                <Button size="xs" variant="secondary" onClick={handleTestUrl} disabled={saving || testLoading}>{testLoading ? 'Testing...' : 'Test URL'}</Button>
+              </div>
+              {testResult && (
+                <div className={`mt-1 text-xs ${testResult.ok ? 'text-green-600' : 'text-red-600'}`}>
+                  {testResult.ok ? (
+                    <>
+                      Reachable (status {testResult.status || '200'}){testResult.latencyMs !== undefined && ` • ${Math.round(testResult.latencyMs)}ms`}
+                    </>
+                  ) : (
+                    <>Unreachable{testResult.error ? `: ${testResult.error}` : ''}</>
+                  )}
+                </div>
+              )}
             </div>
             <div className="col-span-full">
               <label className="block text-sm font-medium text-gray-700">Description</label>

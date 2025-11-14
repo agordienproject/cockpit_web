@@ -8,6 +8,7 @@ import verifRoutes from "./routes/verif.routes";
 import workerRoutes from "./routes/worker.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import grafanaProxy from "./routes/grafana.routes";
+import monitoringRoutes from "./routes/monitoring.routes";
 import cors from "cors";
 import { info } from "./utils/logger";
 
@@ -32,6 +33,8 @@ app.use("/api/systems", systemRoutes);
 app.use("/api/verifications", verifRoutes);
 app.use("/api/dashboards", dashboardRoutes);
 app.use("/api/workers", workerRoutes);
+// Public monitoring endpoints (no auth) for Prometheus HTTP SD
+app.use("/monitoring", monitoringRoutes);
 
 // Secure Grafana proxy (iframe embeds authenticate via service account token)
 app.use("/grafana", grafanaProxy);

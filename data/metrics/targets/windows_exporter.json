@@ -1,8 +1,19 @@
 [
   {
-    "targets": ["host.docker.internal:9182"],
+    "targets": [
+      "host.docker.internal:9182"
+    ],
     "labels": {
-      "machine": "LOCAL_WINDOWS",
+      "machine": "HP_VICTUS",
+      "os": "windows"
+    }
+  },
+  {
+    "targets": [
+      "192.168.1.21:9182"
+    ],
+    "labels": {
+      "machine": "ACEMAGIC",
       "os": "windows"
     }
   }

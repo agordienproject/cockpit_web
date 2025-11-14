@@ -20,6 +20,7 @@ router.delete("/machine-ref/:id", requireAdmin, machineController.deleteRefMachi
 
 // Endpoints for machines
 router.get("/", machineController.getAllMachinesInfos);
+router.get("/test-url", machineController.testExporterUrl);                 // Test arbitrary exporter URL before create
 router.get("/:id", machineController.getMachineInfos);                          // Route to get machine view
 router.get("/:id/test", machineController.testMachine);                         // Route to test if we can access to the machine's metrics
 router.post("/", verifyRole, machineController.createMachineInfos);             // Route to create machine

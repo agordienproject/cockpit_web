@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as machineService from "../services/machine.service";
+import * as monitoringService from "../services/monitoring.service";
 import { info, error as logError } from "../utils/logger";
 
 const convertBigIntToString = (obj: any) => {
@@ -34,8 +35,29 @@ export const getMachineInfos = async (req: Request, res: Response) => {
 };
 
 export const testMachine = async (req: Request, res: Response) => {
-    // Placeholder: In future this can ping machine metrics or run checks
-    res.status(200).json({ message: "Test endpoint - machine connectivity not implemented" });
+    try {
+        const id = req.params.id;
+        const m = await machineService.getMachineById(id);
+        const url = String((m as any).url_metrics_machine || '').trim();
+        if (!url) return res.status(400).json({ ok: false, error: 'No metrics URL on machine' });
+        const probe = await monitoringService.testExporterUrl(url);
+        return res.status(probe.ok ? 200 : 502).json(probe);
+    } catch (error: any) {
+        logError('machine.testMachine - error', { error: error?.message || error });
+        res.status(500).json({ ok: false, error: error.message });
+    }
+};
+
+export const testExporterUrl = async (req: Request, res: Response) => {
+    try {
+        const url = String(req.query.url || '').trim();
+        if (!url) return res.status(400).json({ ok: false, error: 'Missing url query parameter' });
+        const probe = await monitoringService.testExporterUrl(url);
+        return res.status(probe.ok ? 200 : 502).json(probe);
+    } catch (error: any) {
+        logError('machine.testExporterUrl - error', { error: error?.message || error });
+        res.status(500).json({ ok: false, error: error.message });
+    }
 };
 
 export const createMachineInfos = async (req: Request, res: Response) => {
@@ -44,6 +66,20 @@ export const createMachineInfos = async (req: Request, res: Response) => {
         const user_id = req.user?.id;
         info('machine.createMachineInfos - start', { body: data, user: user_id });
         const resp = await machineService.createMachine(data, user_id);
+        try {
+            // Attempt to add to file_sd targets for Prometheus
+            const address = String(data.url_metrics_machine || '').trim();
+            const os = String(data.os_machine || '').toLowerCase();
+            if (address && os) {
+                await monitoringService.addFileSdTarget(os, address, {
+                    machine: String(data.name_machine || `M${(resp as any)?.id_machine}`),
+                    os,
+                });
+                info('machine.createMachineInfos - filesd target added', { os, address });
+            }
+        } catch (e: any) {
+            logError('machine.createMachineInfos - filesd update failed', { error: e?.message || e });
+        }
         info('machine.createMachineInfos - success', { id: (resp as any)?.id_machine });
         res.status(200).json(convertBigIntToString(resp));
     } catch (error: any) {

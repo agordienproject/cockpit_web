@@ -25,6 +25,23 @@ export const deleteMachine = async (id) => {
   return resp.data;
 };
 
+export const testMachineById = async (id) => {
+  const resp = await api.get(`/machines/${id}/test`);
+  return resp.data;
+};
+
+export const testExporterUrl = async (url) => {
+  const params = new URLSearchParams({ url });
+  console.log('Testing URL:', url);
+  if (typeof url === 'string' && url.startsWith('host.docker.internal')) {
+    console.log('Replacing host.docker.internal with localhost');
+    params.set('url', url.replace('host.docker.internal', 'localhost'));
+  }
+  console.log('Final URL for testing:', params.get('url'));
+  const resp = await api.get(`/machines/test-url?${params.toString()}`);
+  return resp.data;
+};
+
 // Referential endpoints for machine types
 export const getAllRefMachines = async (filters = null) => {
   let url = '/machines/machine-ref';
@@ -62,4 +79,4 @@ export const activateRefMachine = async (id) => {
   return resp.data;
 };
 
-export default { getAllMachines, getMachineById, createMachine, updateMachine, deleteMachine, getAllRefMachines, createRefMachine, updateRefMachine, deleteRefMachine, getDisabledRefMachines, activateRefMachine };
+export default { getAllMachines, getMachineById, createMachine, updateMachine, deleteMachine, testMachineById, testExporterUrl, getAllRefMachines, createRefMachine, updateRefMachine, deleteRefMachine, getDisabledRefMachines, activateRefMachine };

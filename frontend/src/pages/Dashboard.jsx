@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [machineStats, setMachineStats] = useState({ total: 0, connected: 0 });
+  const [testingConnections, setTestingConnections] = useState(false);
   const [workerCount, setWorkerCount] = useState(0);
   
 
@@ -31,19 +32,9 @@ export default function Dashboard() {
           machineService.getAllMachines(),
           workerService.getAllWorkers(),
         ]);
-
-        // machines may not have a consistent 'connected' field across environments.
-        // We'll check several common keys and treat truthy values as connected.
         const total = Array.isArray(machines) ? machines.length : 0;
-        const connected = Array.isArray(machines)
-          ? machines.filter(m => (
-              m.connected === true || m.is_connected === true || m.online === true || (m.status && String(m.status).toLowerCase() === 'connected')
-            )).length
-          : 0;
-
-        setMachineStats({ total, connected });
         setWorkerCount(Array.isArray(workers) ? workers.length : 0);
-        
+        await testConnections(machines, total);
       } catch (err) {
         setError(err.message || 'Failed to load dashboard summary');
       } finally {
@@ -52,6 +43,24 @@ export default function Dashboard() {
     };
     load();
   }, []);
+
+  const testConnections = async (machines, totalOverride = null) => {
+    if (!Array.isArray(machines)) { setMachineStats({ total: 0, connected: 0 }); return; }
+    setTestingConnections(true);
+    try {
+      const results = await Promise.all(
+        machines.map(m => {
+          const url = (m && m.url_metrics_machine) ? String(m.url_metrics_machine).trim() : '';
+          if (!url) return Promise.resolve({ ok: false });
+          return machineService.testExporterUrl(url).catch(() => ({ ok: false }));
+        })
+      );
+      const connected = results.filter(r => r && r.ok === true).length;
+      setMachineStats({ total: totalOverride !== null ? totalOverride : machines.length, connected });
+    } finally {
+      setTestingConnections(false);
+    }
+  };
 
   if (loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   if (error) return <div className="flex items-center justify-center min-h-screen text-red-600">{error}</div>;
@@ -63,9 +72,23 @@ export default function Dashboard() {
 
       <Grid numItemsMd={2} numItemsLg={3} className="gap-6 mt-6">
         <Card>
-          <Title>Machines</Title>
-          <Metric className="mt-2">{machineStats.connected} / {machineStats.total} connected</Metric>
-          <Text className="mt-2 text-sm">Connected machines are detected by common flags (connected/online/status).</Text>
+          <div className="flex items-start justify-between">
+            <div>
+              <Title>Machines</Title>
+              <Metric className="mt-2">{machineStats.connected} / {machineStats.total} connected</Metric>
+              <Text className="mt-2 text-sm">Connectivity tested via metrics endpoint reachability.</Text>
+            </div>
+            <button
+              onClick={async () => {
+                try {
+                  const machines = await machineService.getAllMachines();
+                  await testConnections(machines);
+                } catch (e) { /* ignore refresh errors */ }
+              }}
+              disabled={testingConnections}
+              className="ml-4 mt-1 inline-flex items-center px-3 py-1.5 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+            >{testingConnections ? 'Testing...' : 'Refresh'}</button>
+          </div>
         </Card>
 
         <Card>
