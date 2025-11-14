@@ -17,6 +17,7 @@ import MachineDetails from './pages/MachineDetails';
 import Workers from './pages/Workers';
 import WorkerDetails from './pages/WorkerDetails';
 import UnknownPage from './pages/UnknownPage';
+import MachineDashboards from './pages/MachineDashboards';
 
 function App() {
   // Initialize from localStorage if present
@@ -74,6 +75,13 @@ function App() {
           <ProtectedRoute>
             <Layout userRole={userRole} key={userRole}>
               <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/dashboards/windows" element={
+          <ProtectedRoute>
+            <Layout userRole={userRole} key={userRole}>
+              <MachineDashboards />
             </Layout>
           </ProtectedRoute>
         } />

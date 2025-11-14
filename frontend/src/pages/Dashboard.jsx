@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Card,
   Title,
@@ -73,7 +74,18 @@ export default function Dashboard() {
           <Text className="mt-2 text-sm">Total registered workers</Text>
         </Card>
 
-        {/* Recent work removed (inspection-related) */}
+        <Card className="flex flex-col justify-between">
+          <div>
+            <Title>Dashboards Windows</Title>
+            <Text className="mt-2 text-sm">Visualiser les métriques système (CPU, RAM, Disque, Réseau).</Text>
+          </div>
+          <Link
+            to="/dashboards/windows"
+            className="mt-4 inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded shadow"
+          >
+            Ouvrir le dashboard
+          </Link>
+        </Card>
       </Grid>
     </main>
   );

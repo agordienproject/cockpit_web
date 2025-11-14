@@ -1,0 +1,36 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  # File-based discovery for local Windows exporters. Add/remove JSON files under metrics/targets.
+  - job_name: windows_hosts
+    file_sd_configs:
+      - files:
+        - /etc/prometheus/targets/windows_exporter.json
+        refresh_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # (Future) Dynamic discovery via backend HTTP SD endpoint.
+  # Uncomment when endpoint is implemented.
+  # - job_name: cockpit_machines
+  #   metrics_path: /metrics
+  #   http_sd_configs:
+  #     - url: http://host.docker.internal:3000/monitoring/prometheus/targets
+  #       refresh_interval: 30s
+  #   relabel_configs:
+  #     - source_labels: [__address__]
+  #       target_label: instance
+  #     - source_labels: [machine]
+  #       target_label: machine
+  #     - source_labels: [os]
+  #       target_label: os
+
+# Optional: add alerts by including rule_files and Alertmanager config later.

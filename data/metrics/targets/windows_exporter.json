@@ -1,0 +1,9 @@
+[
+  {
+    "targets": ["host.docker.internal:9182"],
+    "labels": {
+      "machine": "LOCAL_WINDOWS",
+      "os": "windows"
+    }
+  }
+]

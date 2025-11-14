@@ -2,6 +2,9 @@ import sys
 import time
 import getpass
 import subprocess
+import os
+import shutil
+import stat
 from pathlib import Path
 
 
@@ -411,10 +414,10 @@ def main():
     data_dir = repo_root / "data"
     backend_dir = repo_root / "backend"
     frontend_dir = repo_root / "frontend"
+    prisma_generated_dir = backend_dir / "prisma" / "generated"
 
     compose_path = data_dir / "docker-compose.yaml"
     ddl_inspection_path = data_dir / "DDL_COCKPIT.sql"
-    users_csv_path = data_dir / "example_data" / "user.csv"
 
     # Ask which installation to perform: complete (DB + WEB), web only, or db only.
     print("=== AUAS Web Lab Setup ===")
@@ -550,7 +553,17 @@ def main():
         npx_cmd = resolve_command(["npx", "npx.cmd", "npx.exe"])  # Robust Windows support
         run_command(npx_cmd + ["prisma", "db", "pull", "--schema=./prisma/schema_psql.prisma"], cwd=backend_dir, check=True)
 
-        print("→ Prisma: generating client…")
+        # Remove previously generated Prisma client to avoid Windows EPERM rename conflicts.
+        if prisma_generated_dir.exists():
+            print(f"→ Removing existing Prisma generated directory to avoid EPERM issues: {prisma_generated_dir}")
+            def _on_rm_error(func, path, exc_info):  # Best-effort fix for read-only files
+                try:
+                    os.chmod(path, stat.S_IWRITE)
+                    func(path)
+                except Exception:
+                    pass
+            shutil.rmtree(prisma_generated_dir, onerror=_on_rm_error)
+        print("→ Prisma: generating client (fresh)…")
         run_command(npx_cmd + ["prisma", "generate", "--schema=./prisma/schema_psql.prisma"], cwd=backend_dir, check=True)
 
         # 8) Frontend setup
