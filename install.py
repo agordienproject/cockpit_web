@@ -4,7 +4,6 @@ import getpass
 import subprocess
 import os
 import shutil
-import stat
 from pathlib import Path
 
 
@@ -54,23 +53,6 @@ def run_command(cmd: list[str], cwd: Path | None = None, env: dict | None = None
 
 # Simple, cross-platform helper to remove a directory tree.
 # Uses shutil.rmtree with a tiny onerror that clears read-only attr on Windows.
-def remove_dir_simple(target: Path):
-    if not target.exists():
-        return
-    def _on_rm_error(func, path, exc_info):
-        try:
-            os.chmod(path, stat.S_IWRITE)
-            func(path)
-        except Exception:
-            pass
-    try:
-        shutil.rmtree(target, onerror=_on_rm_error)
-    except PermissionError:
-        # As a last resort on Windows, use native rmdir which often succeeds against locked attrs
-        if os.name == 'nt':
-            subprocess.run(["cmd", "/c", "rd", "/s", "/q", str(target)], check=False)
-        else:
-            raise
 
 
 def resolve_command(candidates: list[str]) -> list[str]:
@@ -574,30 +556,24 @@ def main():
         npx_cmd = resolve_command(["npx", "npx.cmd", "npx.exe"])  # Robust Windows support
         run_command(npx_cmd + ["prisma", "db", "pull", "--schema=./prisma/schema_psql.prisma"], cwd=backend_dir, check=True)
 
-        # Remove previously generated Prisma client (best-effort), then generate with a simple retry on EPERM.
+        # New strategy: do NOT delete the generated directory. Instead ensure permissions (Windows) before generating.
         if prisma_generated_dir.exists():
-            print(f"→ Removing existing Prisma generated directory to avoid EPERM issues: {prisma_generated_dir}")
-            remove_dir_simple(prisma_generated_dir)
-        print("→ Prisma: generating client (fresh)…")
+            print(f"✖ Le dossier Prisma généré existe déjà: {prisma_generated_dir}")
+            print("Supprimez ce dossier manuellement puis relancez l'installation (python install.py).")
+            print("Arrêt de l'installation web.")
+            return
+        print("→ Prisma: generating client…")
         gen_cmd = npx_cmd + ["prisma", "generate", "--schema=./prisma/schema_psql.prisma"]
         # First try
         res = subprocess.run(gen_cmd, cwd=str(backend_dir), text=True, capture_output=True)
         if res.returncode != 0:
             out = (res.stdout or "") + "\n" + (res.stderr or "")
-            if "EPERM: operation not permitted, rename" in out:
-                print("! Prisma EPERM during generate; retrying once after cleanup…")
-                remove_dir_simple(prisma_generated_dir)
-                time.sleep(1.0)
-                res2 = subprocess.run(gen_cmd, cwd=str(backend_dir))
-                if res2.returncode != 0:
-                    raise RuntimeError(f"Prisma generate failed with exit code {res2.returncode}")
-            else:
-                # show logs to help troubleshooting
-                if res.stdout:
-                    print(res.stdout)
-                if res.stderr:
-                    print(res.stderr)
-                raise RuntimeError(f"Prisma generate failed with exit code {res.returncode}")
+            # show logs to help troubleshooting (no automatic retry strategy now)
+            if res.stdout:
+                print(res.stdout)
+            if res.stderr:
+                print(res.stderr)
+            raise RuntimeError(f"Prisma generate failed with exit code {res.returncode}")
 
         # 8) Frontend setup
         frontend_env_tmpl = frontend_dir / ".env_template"

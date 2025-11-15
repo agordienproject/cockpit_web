@@ -8,15 +8,15 @@ scrape_configs:
     static_configs:
       - targets: ["prometheus:9090"]
 
-  # File-based discovery for local Windows exporters. Add/remove JSON files under metrics/targets.
-  - job_name: windows_hosts
-    file_sd_configs:
-      - files:
-        - /etc/prometheus/targets/windows_exporter.json
-        refresh_interval: 15s
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
+  # # File-based discovery for local Windows exporters. Add/remove JSON files under metrics/targets.
+  # - job_name: windows_hosts
+  #   file_sd_configs:
+  #     - files:
+  #       - /etc/prometheus/targets/windows_exporter.json
+  #       refresh_interval: 15s
+  #   relabel_configs:
+  #     - source_labels: [__address__]
+  #       target_label: instance
 
   # Dynamic discovery via backend HTTP SD endpoint.
   - job_name: cockpit_machines
