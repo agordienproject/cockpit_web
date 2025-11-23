@@ -18,6 +18,15 @@ router.post("/machine-ref/", requireAdmin, machineController.createRefMachineInf
 router.put("/machine-ref/:id", requireAdmin, machineController.updateRefMachineInfos);             // Route to update one Machine referential
 router.delete("/machine-ref/:id", requireAdmin, machineController.deleteRefMachineInfos);          // Route to delete one Machine by id
 
+// Endpoints for OS referential
+router.get("/os-ref", machineController.getAllRefOsMachinesInfos);
+router.get("/os-ref/disabled", requireAdmin, machineController.getAllDisabledRefOsMachinesInfos);
+router.put("/os-ref/:id/activate", requireAdmin, machineController.activateRefOsMachineInfos);
+router.get("/os-ref/:id", machineController.getRefOsMachineInfos);
+router.post("/os-ref/", requireAdmin, machineController.createRefOsMachineInfos);
+router.put("/os-ref/:id", requireAdmin, machineController.updateRefOsMachineInfos);
+router.delete("/os-ref/:id", requireAdmin, machineController.deleteRefOsMachineInfos);
+
 // Endpoints for machines
 router.get("/", machineController.getAllMachinesInfos);
 router.get("/test-url", machineController.testExporterUrl);                 // Test arbitrary exporter URL before create

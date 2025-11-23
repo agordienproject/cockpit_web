@@ -4,6 +4,7 @@ import { Card, Title, Button } from '@tremor/react';
 export default function AdminReferentials() {
   const refs = [
     { key: 'machines', title: 'Machine Types', desc: 'Manage machine type referentials' },
+    { key: 'os', title: 'Operating Systems', desc: 'Manage operating system referentials' },
     { key: 'systems', title: 'System Types', desc: 'Manage system type referentials' },
     { key: 'services', title: 'Services', desc: 'Manage service referentials' },
   ];

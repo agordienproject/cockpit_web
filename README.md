@@ -49,13 +49,48 @@ Follow the prompts for IP and DB credentials. This will:
   ```
 
 ## Project structure
-- `data/` — Docker Compose, SQL DDL, and example CSVs
-- `backend/` — Express API, Prisma schema, and services
-- `frontend/` — React app (Create React App)
 
 See the README in each folder for details.
 
----
+## Worker Health Verification
+
+You can create a worker (via the UI or API) which generates `creds_worker`. With these credentials you can run the Python health verification worker that:
+1. Calls the backend health endpoint `/api/health`.
+2. Submits a verification to `/api/verifications` using only its credentials.
+
+### Health Endpoint
+`GET /api/health` returns JSON:
+```json
+{ "status": "UP", "db": "UP", "ms": 12 }
+```
+Status is `UP` if the application and database are reachable, else `DOWN`.
+
+### Python Worker Script
+File: `worker_health_verifier.py`
+
+Install dependency:
+```bash
+pip install requests
+```
+Run script:
+```bash
+python worker_health_verifier.py --base-url http://127.0.0.1:3001/api --creds <worker_creds>
+```
+Example output:
+```json
+{
+  "health_status": "UP",
+  "verif_status": "OK",
+  "submitted": true,
+  "verification_response": { "id_verif": 5, "status": "OK", "details": "..." }
+}
+```
+
+The backend automatically maps the credentials to `id_worker`, `id_sys`, and `id_machine` when creating the verification.
+
+### Verification Statuses
+Verifications now enforce allowed statuses: `OK`, `WARN`, `ERROR`.
+The health worker script maps service availability to `OK` (reachable) or `ERROR` (unreachable). You can introduce `WARN` for partial degradation scenarios in custom workers.
 
 ## Troubleshooting
 - Orphan containers warning: add `--remove-orphans` to the compose command or clean up in Docker Desktop.

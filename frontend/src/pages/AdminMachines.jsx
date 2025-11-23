@@ -18,13 +18,15 @@ import { machineService } from '../services';
 export default function AdminMachines() {
   const [machines, setMachines] = useState([]);
   const [types, setTypes] = useState([]);
+  const [oses, setOses] = useState([]);
   const [typeQuery, setTypeQuery] = useState('');
+  const [osQuery, setOsQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [newItem, setNewItem] = useState({ name_machine: '', id_type_machine: '', os_machine: '', version_machine: '', description_machine: '', url_metrics_machine: '' });
+  const [newItem, setNewItem] = useState({ name_machine: '', id_type_machine: '', id_os_machine: '', version_machine: '', description_machine: '', url_metrics_machine: '' });
   const [testLoading, setTestLoading] = useState(false);
   const [testResult, setTestResult] = useState(null); // { ok, status, latencyMs, error }
 
@@ -33,9 +35,10 @@ export default function AdminMachines() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-  const [resp, refTypes] = await Promise.all([machineService.getAllMachines(), machineService.getAllRefMachines()]);
+  const [resp, refTypes, refOs] = await Promise.all([machineService.getAllMachines(), machineService.getAllRefMachines(), machineService.getAllRefOs()]);
   setMachines(resp || []);
   setTypes(Array.isArray(refTypes) ? refTypes : (refTypes?.data || []));
+  setOses(Array.isArray(refOs) ? refOs : (refOs?.data || []));
     } catch (err) {
       setError(err.message || 'Failed to load');
     } finally { setLoading(false); }
@@ -52,7 +55,7 @@ export default function AdminMachines() {
       const created = await machineService.createMachine(newItem);
       setMachines([...machines, created]);
       setShowAdd(false);
-      setNewItem({ name_machine: '', id_type_machine: '', os_machine: '', version_machine: '', description_machine: '', url_metrics_machine: '' });
+      setNewItem({ name_machine: '', id_type_machine: '', id_os_machine: '', version_machine: '', description_machine: '', url_metrics_machine: '' });
       setTestResult(null);
     } catch (err) {
       setError(err.message || 'Failed to add machine');
@@ -130,7 +133,18 @@ export default function AdminMachines() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">OS</label>
-              <TextInput value={newItem.os_machine} onChange={e => setNewItem({ ...newItem, os_machine: e.target.value })} disabled={saving} />
+              <TextInput className="mb-2" placeholder="Search OS..." value={osQuery} onChange={e => setOsQuery(e.target.value)} />
+              <Select value={newItem.id_os_machine} onValueChange={val => setNewItem({ ...newItem, id_os_machine: val })}>
+                <SelectItem value={''}>None</SelectItem>
+                {oses
+                  .filter(Boolean)
+                  .filter(o => !osQuery || (o.name_os_machine || '').toString().toLowerCase().includes(osQuery.toLowerCase()))
+                  .slice(0, 20)
+                  .map(o => <SelectItem key={o.id_os_machine} value={String(o.id_os_machine)}>{o.name_os_machine}</SelectItem>)}
+              </Select>
+              {oses.length > 20 && (
+                <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, oses.length)} of {oses.length}. Refine search to find other options.</div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Version</label>
@@ -209,7 +223,26 @@ export default function AdminMachines() {
                       types.find(t => t && t.id_type_machine === m.id_type_machine)?.name_type_machine || '-'
                     )}
                   </TableCell>
-                  <TableCell>{editing?.id_machine === m.id_machine ? (<TextInput value={editing.os_machine} onChange={e => setEditing({ ...editing, os_machine: e.target.value })} />) : (m.os_machine || '-')}</TableCell>
+                  <TableCell>
+                    {editing?.id_machine === m.id_machine ? (
+                      <div>
+                        <TextInput className="mb-2" placeholder="Search OS..." value={osQuery} onChange={e => setOsQuery(e.target.value)} />
+                        <Select value={editing.id_os_machine} onValueChange={val => setEditing({ ...editing, id_os_machine: val })}>
+                          <SelectItem value={''}>None</SelectItem>
+                          {oses
+                            .filter(Boolean)
+                            .filter(o => !osQuery || (o.name_os_machine || '').toString().toLowerCase().includes(osQuery.toLowerCase()))
+                            .slice(0, 20)
+                            .map(o => <SelectItem key={o.id_os_machine} value={String(o.id_os_machine)}>{o.name_os_machine}</SelectItem>)}
+                        </Select>
+                        {oses.length > 20 && (
+                          <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, oses.length)} of {oses.length}. Refine search to find other options.</div>
+                        )}
+                      </div>
+                    ) : (
+                      oses.find(o => o && o.id_os_machine === m.id_os_machine)?.name_os_machine || m.os_machine || '-'
+                    )}
+                  </TableCell>
                   <TableCell>{editing?.id_machine === m.id_machine ? (<TextInput value={editing.version_machine} onChange={e => setEditing({ ...editing, version_machine: e.target.value })} />) : (m.version_machine || '-')}</TableCell>
                   <TableCell>{editing?.id_machine === m.id_machine ? (<TextInput value={editing.url_metrics_machine} onChange={e => setEditing({ ...editing, url_metrics_machine: e.target.value })} />) : (m.url_metrics_machine || '-')}</TableCell>
                   <TableCell>{editing?.id_machine === m.id_machine ? (<TextInput value={editing.description_machine} onChange={e => setEditing({ ...editing, description_machine: e.target.value })} />) : (m.description_machine || '-')}</TableCell>

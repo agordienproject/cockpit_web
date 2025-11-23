@@ -27,7 +27,7 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction): vo
     info(`[${reqId}] verifyToken - Token present: ${!!token}`);
     if (!token) {
         info(`[${reqId}] verifyToken - Token not found`);
-        res.status(401).json({ error: 'Access denied. No token provided.' });
+        res.status(401).json({ error: 'Access denied. No token provided.', code: 'AUTH_UNAUTHENTICATED' });
         return;
     }
     info(`[${reqId}] verifyToken - Verifying token`);
@@ -44,9 +44,9 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction): vo
         logError('verifyToken - Invalid token', { reqId, error: errMsg, name: errName, stack: (error as any)?.stack });
         // Return 401 for expired tokens so clients can distinguish and take action (relogin / refresh)
         if (errName === 'TokenExpiredError') {
-            res.status(401).json({ error: 'Token expired.' });
+            res.status(401).json({ error: 'Token expired.', code: 'AUTH_TOKEN_EXPIRED' });
             return;
         }
-        res.status(401).json({ error: 'Invalid token.' });
+        res.status(401).json({ error: 'Invalid token.', code: 'AUTH_INVALID_TOKEN' });
     }
 };

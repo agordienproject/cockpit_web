@@ -68,8 +68,8 @@ export const createMachineInfos = async (req: Request, res: Response) => {
         const resp = await machineService.createMachine(data, user_id);
         try {
             // Attempt to add to file_sd targets for Prometheus
-            const address = String(data.url_metrics_machine || '').trim();
-            const os = String(data.os_machine || '').toLowerCase();
+            const address = String((resp as any)?.url_metrics_machine || data.url_metrics_machine || '').trim();
+            const os = String((resp as any)?.os_machine || data.os_machine || '').toLowerCase();
             if (address && os) {
                 await monitoringService.addFileSdTarget(os, address, {
                     machine: String(data.name_machine || `M${(resp as any)?.id_machine}`),
@@ -209,6 +209,102 @@ export const activateRefMachineInfos = async (req: Request, res: Response) => {
         res.status(200).json(convertBigIntToString(resp));
     } catch (error: any) {
         logError('machine.activateRefMachineInfos - error', { error: error?.message || error });
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// OS Referential endpoints
+export const getAllRefOsMachinesInfos = async (req: Request, res: Response) => {
+    try {
+        const filters = req.query || {};
+        info('machine.getAllRefOsMachinesInfos - start', { filters });
+        const resp = await machineService.getAllRefOs(filters as any);
+        info('machine.getAllRefOsMachinesInfos - success', { count: Array.isArray(resp) ? resp.length : undefined });
+        res.status(200).json(convertBigIntToString(resp));
+    } catch (error: any) {
+        logError('machine.getAllRefOsMachinesInfos - error', { error: error?.message || error });
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getRefOsMachineInfos = async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id;
+        info('machine.getRefOsMachineInfos - start', { id });
+        const resp = await machineService.getRefOsById(id);
+        info('machine.getRefOsMachineInfos - success', { id });
+        res.status(200).json(convertBigIntToString(resp));
+    } catch (error: any) {
+        logError('machine.getRefOsMachineInfos - error', { error: error?.message || error });
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const createRefOsMachineInfos = async (req: Request, res: Response) => {
+    try {
+        const data = req.body;
+        const user_id = req.user?.id;
+        info('machine.createRefOsMachineInfos - start', { body: data, user: user_id });
+        const resp = await machineService.createRefOs(data, user_id);
+        info('machine.createRefOsMachineInfos - success', { id: (resp as any)?.id_os_machine });
+        res.status(200).json(convertBigIntToString(resp));
+    } catch (error: any) {
+        logError('machine.createRefOsMachineInfos - error', { error: error?.message || error });
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const updateRefOsMachineInfos = async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id;
+        const data = req.body;
+        const user_id = req.user?.id;
+        info('machine.updateRefOsMachineInfos - start', { id, body: data, user: user_id });
+        const resp = await machineService.updateRefOs(id, data, user_id);
+        info('machine.updateRefOsMachineInfos - success', { id });
+        res.status(200).json(convertBigIntToString(resp));
+    } catch (error: any) {
+        logError('machine.updateRefOsMachineInfos - error', { error: error?.message || error });
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const deleteRefOsMachineInfos = async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id;
+        const user_id = req.user?.id;
+        info('machine.deleteRefOsMachineInfos - start', { id, user: user_id });
+        const resp = await machineService.deleteRefOs(id, user_id);
+        info('machine.deleteRefOsMachineInfos - success', { id });
+        res.status(200).json(convertBigIntToString(resp));
+    } catch (error: any) {
+        logError('machine.deleteRefOsMachineInfos - error', { error: error?.message || error });
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getAllDisabledRefOsMachinesInfos = async (_req: Request, res: Response) => {
+    try {
+        info('machine.getAllDisabledRefOsMachinesInfos - start');
+        const resp = await machineService.getAllDisabledRefOs();
+        info('machine.getAllDisabledRefOsMachinesInfos - success', { count: Array.isArray(resp) ? resp.length : undefined });
+        res.status(200).json(convertBigIntToString(resp));
+    } catch (error: any) {
+        logError('machine.getAllDisabledRefOsMachinesInfos - error', { error: error?.message || error });
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const activateRefOsMachineInfos = async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id;
+        const user_id = req.user?.id;
+        info('machine.activateRefOsMachineInfos - start', { id, user: user_id });
+        const resp = await machineService.activateRefOsById(id, user_id);
+        info('machine.activateRefOsMachineInfos - success', { id });
+        res.status(200).json(convertBigIntToString(resp));
+    } catch (error: any) {
+        logError('machine.activateRefOsMachineInfos - error', { error: error?.message || error });
         res.status(500).json({ error: error.message });
     }
 };

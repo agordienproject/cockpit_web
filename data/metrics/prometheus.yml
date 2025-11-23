@@ -23,7 +23,7 @@ scrape_configs:
     metrics_path: /metrics
     http_sd_configs:
       - url: http://host.docker.internal:3000/monitoring/prometheus/targets
-        refresh_interval: 30s
+        refresh_interval: 15s
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance

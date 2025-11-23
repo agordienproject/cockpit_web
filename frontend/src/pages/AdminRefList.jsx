@@ -33,34 +33,53 @@ export default function AdminRefList() {
   const [statusFilter, setStatusFilter] = useState('');
 
   const getApi = () => {
-    if (type === 'machines') return {
-      list: machineService.getAllRefMachines,
-      create: machineService.createRefMachine,
-      update: machineService.updateRefMachine,
-      remove: machineService.deleteRefMachine,
-      idField: 'id_type_machine',
-      nameField: 'name_type_machine',
-      descField: 'description_type_machine',
-    };
-    if (type === 'systems') return {
-      list: systemService.getAllRefSystems,
-      create: systemService.createRefSystem,
-      update: systemService.updateRefSystem,
-      remove: systemService.deleteRefSystem,
-      idField: 'id_type_sys',
-      nameField: 'name_type_sys',
-      descField: 'description_type_sys',
-    };
-    // services
-    return {
-      list: serviceService.getAllServices,
-      create: serviceService.createService,
-      update: serviceService.updateService,
-      remove: serviceService.deleteService,
-      idField: 'id_service',
-      nameField: 'name_service',
-      descField: 'description_service',
-    };
+    switch (type) {
+      case 'machines':
+        return {
+          list: machineService.getAllRefMachines,
+          create: machineService.createRefMachine,
+          update: machineService.updateRefMachine,
+          remove: machineService.deleteRefMachine,
+          activate: machineService.activateRefMachine,
+          idField: 'id_type_machine',
+          nameField: 'name_type_machine',
+          descField: 'description_type_machine',
+        };
+      case 'os':
+        return {
+          list: machineService.getAllRefOs,
+          create: machineService.createRefOs,
+          update: machineService.updateRefOs,
+          remove: machineService.deleteRefOs,
+          activate: machineService.activateRefOs,
+          idField: 'id_os_machine',
+          nameField: 'name_os_machine',
+          descField: 'description_os_machine',
+        };
+      case 'systems':
+        return {
+          list: systemService.getAllRefSystems,
+          create: systemService.createRefSystem,
+          update: systemService.updateRefSystem,
+          remove: systemService.deleteRefSystem,
+          activate: systemService.activateRefSystem,
+          idField: 'id_type_sys',
+          nameField: 'name_type_sys',
+          descField: 'description_type_sys',
+        };
+      case 'services':
+      default:
+        return {
+          list: serviceService.getAllServices,
+          create: serviceService.createService,
+          update: serviceService.updateService,
+          remove: serviceService.deleteService,
+          activate: serviceService.activateService,
+          idField: 'id_service',
+          nameField: 'name_service',
+          descField: 'description_service',
+        };
+    }
   };
 
   const api = getApi();
@@ -251,12 +270,8 @@ export default function AdminRefList() {
                                 if (!window.confirm('Reactivate this item?')) return;
                                 setSaving(true); setError(null);
                                 try {
-                                  if (type === 'machines') {
-                                    await machineService.activateRefMachine(it[api.idField]);
-                                  } else if (type === 'systems') {
-                                    await systemService.activateRefSystem(it[api.idField]);
-                                  } else if (type === 'services') {
-                                    await serviceService.activateService(it[api.idField]);
+                                  if (api.activate) {
+                                    await api.activate(it[api.idField]);
                                   }
                                   // remove deleted flag in items if present
                                   setItems(items.map(x => x && x[api.idField] === it[api.idField] ? { ...x, deleted: false } : x));

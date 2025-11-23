@@ -11,6 +11,34 @@ export const getVerifById = async (id: any) => {
 };
 
 export const createVerif = async (data: any, userId: any) => {
+  // If only creds_worker provided, attempt lookup of worker -> populate IDs
+  if (!data.id_worker && data.creds_worker) {
+    const worker = await prismaPSQL.dIM_WORKER.findFirst({ where: { creds_worker: data.creds_worker, deleted: false } });
+    if (!worker) throw new Error("Worker not found for provided credentials");
+    data.id_worker = worker.id_worker;
+    data.id_sys = worker.id_sys;
+    data.id_machine = worker.id_machine;
+  }
+  if (!data.id_worker || !data.id_sys || !data.id_machine) {
+    throw new Error("Missing required IDs (worker/system/machine) to create verification");
+  }
+  // Validate status
+  const allowedStatuses = ["OK", "WARN", "ERROR"];
+  if (!data.status || !allowedStatuses.includes(String(data.status).toUpperCase())) {
+    throw new Error("Invalid status. Allowed values: OK, WARN, ERROR");
+  }
+  data.status = String(data.status).toUpperCase();
+  // Determine user id: use provided userId else default worker manager account
+  let effectiveUserId: number | undefined = userId ? parseInt(userId) : undefined;
+  if (!effectiveUserId) {
+    const WORKER_MANAGER_EMAIL = process.env.WORKER_MANAGER_EMAIL || 'w.manager@nproximite.com';
+    const manager = await prismaPSQL.dIM_USER.findFirst({ where: { email: WORKER_MANAGER_EMAIL, deleted: false } });
+    if (manager) {
+      effectiveUserId = Number(manager.id_user);
+    } else {
+      // If manager user not found, we proceed without assigning; could be logged if logger available.
+    }
+  }
   const created = await prismaPSQL.fCT_VERIF_SYSTEM.create({
     data: {
       id_worker: data.id_worker,
@@ -19,15 +47,20 @@ export const createVerif = async (data: any, userId: any) => {
       status: data.status,
       details: data.details,
       creation_date: new Date(),
-      user_creation: userId ? parseInt(userId) : undefined,
+      user_creation: effectiveUserId,
       modification_date: new Date(),
-      user_modification: userId ? parseInt(userId) : undefined,
+      user_modification: effectiveUserId,
     },
   });
   return created;
 };
 
 export const updateVerif = async (id: any, data: any, userId: any) => {
+  const allowedStatuses = ["OK", "WARN", "ERROR"];
+  if (data.status && !allowedStatuses.includes(String(data.status).toUpperCase())) {
+    throw new Error("Invalid status. Allowed values: OK, WARN, ERROR");
+  }
+  if (data.status) data.status = String(data.status).toUpperCase();
   const updated = await prismaPSQL.fCT_VERIF_SYSTEM.update({
     where: { id_verif: id },
     data: {

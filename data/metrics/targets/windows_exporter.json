@@ -4,7 +4,7 @@
       "host.docker.internal:9182"
     ],
     "labels": {
-      "machine": "HP_VICTUS",
+      "machine": "HP-VICTUS",
       "os": "windows"
     }
   },
@@ -14,6 +14,24 @@
     ],
     "labels": {
       "machine": "ACEMAGIC",
+      "os": "windows"
+    }
+  },
+  {
+    "targets": [
+      "http://172.28.80.1:9182"
+    ],
+    "labels": {
+      "machine": "PC_BAPTISTE",
+      "os": "windows"
+    }
+  },
+  {
+    "targets": [
+      "172.28.80.1:9182"
+    ],
+    "labels": {
+      "machine": "PC_BAPTISTE",
       "os": "windows"
     }
   }

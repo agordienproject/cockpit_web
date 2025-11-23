@@ -9,6 +9,7 @@ import workerRoutes from "./routes/worker.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import grafanaProxy from "./routes/grafana.routes";
 import monitoringRoutes from "./routes/monitoring.routes";
+import { prismaPSQL } from "./prisma/client_psql";
 import cors from "cors";
 import { info } from "./utils/logger";
 
@@ -60,6 +61,20 @@ app.get('/api/grafana/health', async (req, res) => {
     info(`grafana.health - fetch error: ${e?.message || String(e)}`);
     return res.status(502).json({ ok: false, error: e?.message || String(e) });
   }
+});
+
+// Generic backend health endpoint (includes DB check)
+app.get('/api/health', async (req, res) => {
+  const started = Date.now();
+  let dbOk = false;
+  try {
+    await prismaPSQL.$queryRaw`SELECT 1`;
+    dbOk = true;
+  } catch (e: any) {
+    info('health - db error', { error: e?.message || e });
+  }
+  const ms = Date.now() - started;
+  res.status(dbOk ? 200 : 500).json({ status: dbOk ? 'UP' : 'DOWN', db: dbOk ? 'UP' : 'DOWN', ms });
 });
 
 app.use("/api", (req, res) => {

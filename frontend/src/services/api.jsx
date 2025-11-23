@@ -25,16 +25,17 @@ api.interceptors.request.use(
 
 // Response interceptor to handle common errors
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Unauthorized - clear localStorage and redirect to login
+    const status = error.response?.status;
+    const code = error.response?.data?.code;
+    const authCodes = ['AUTH_UNAUTHENTICATED', 'AUTH_TOKEN_EXPIRED', 'AUTH_INVALID_TOKEN'];
+    if (status === 401 && authCodes.includes(code)) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
+    // For 403 we do not redirect; UI components can handle permission errors
     return Promise.reject(error);
   }
 );

@@ -54,6 +54,43 @@ export const getAllRefMachines = async (filters = null) => {
   return resp.data;
 };
 
+// OS referential endpoints
+export const getAllRefOs = async (filters = null) => {
+  let url = '/machines/os-ref';
+  if (filters && Object.keys(filters).length > 0) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') params.append(k, String(v)); });
+    url += `?${params.toString()}`;
+  }
+  const resp = await api.get(url);
+  return resp.data;
+};
+
+export const createRefOs = async (payload) => {
+  const resp = await api.post('/machines/os-ref', payload);
+  return resp.data;
+};
+
+export const updateRefOs = async (id, payload) => {
+  const resp = await api.put(`/machines/os-ref/${id}`, payload);
+  return resp.data;
+};
+
+export const deleteRefOs = async (id) => {
+  const resp = await api.delete(`/machines/os-ref/${id}`);
+  return resp.data;
+};
+
+export const getDisabledRefOs = async () => {
+  const resp = await api.get('/machines/os-ref/disabled');
+  return resp.data;
+};
+
+export const activateRefOs = async (id) => {
+  const resp = await api.put(`/machines/os-ref/${id}/activate`);
+  return resp.data;
+};
+
 export const createRefMachine = async (payload) => {
   const resp = await api.post('/machines/machine-ref', payload);
   return resp.data;
@@ -79,4 +116,4 @@ export const activateRefMachine = async (id) => {
   return resp.data;
 };
 
-export default { getAllMachines, getMachineById, createMachine, updateMachine, deleteMachine, testMachineById, testExporterUrl, getAllRefMachines, createRefMachine, updateRefMachine, deleteRefMachine, getDisabledRefMachines, activateRefMachine };
+export default { getAllMachines, getMachineById, createMachine, updateMachine, deleteMachine, testMachineById, testExporterUrl, getAllRefMachines, createRefMachine, updateRefMachine, deleteRefMachine, getDisabledRefMachines, activateRefMachine, getAllRefOs, createRefOs, updateRefOs, deleteRefOs, getDisabledRefOs, activateRefOs };

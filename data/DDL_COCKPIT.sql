@@ -91,13 +91,37 @@ COMMENT ON COLUMN "REF_TYPE_MACHINE"."modification_date"          IS 'Date de mo
 COMMENT ON COLUMN "REF_TYPE_MACHINE"."user_modification"          IS 'Utilisateur qui a modifié la ligne';
 
 
+-- Table: REF_OS_MACHINE
+DROP TABLE IF EXISTS "REF_OS_MACHINE" CASCADE;
+CREATE TABLE "REF_OS_MACHINE" (
+  "id_os_machine"             BIGSERIAL PRIMARY KEY,
+  "name_os_machine"           VARCHAR(120),
+  "description_os_machine"    TEXT,
+  "deleted"                   BOOLEAN DEFAULT FALSE,
+  "creation_date"             TIMESTAMP,
+  "user_creation"             BIGINT,
+  "modification_date"         TIMESTAMP,
+  "user_modification"         BIGINT
+);
+
+-- Comments for REF_OS_MACHINE table columns
+COMMENT ON COLUMN "REF_OS_MACHINE"."id_os_machine"                IS 'ID unique du système d exploitation';
+COMMENT ON COLUMN "REF_OS_MACHINE"."name_os_machine"              IS 'Nom du système d exploitation (Windows, Linux etc...)';
+COMMENT ON COLUMN "REF_OS_MACHINE"."description_os_machine"       IS 'Description du système d exploitation';
+COMMENT ON COLUMN "REF_OS_MACHINE"."deleted"                      IS 'True si le système d exploitation est supprimé';
+COMMENT ON COLUMN "REF_OS_MACHINE"."creation_date"                IS 'Date de création de la ligne';
+COMMENT ON COLUMN "REF_OS_MACHINE"."user_creation"                IS 'Utilisateur qui a créé la ligne';
+COMMENT ON COLUMN "REF_OS_MACHINE"."modification_date"            IS 'Date de modification de la ligne';
+COMMENT ON COLUMN "REF_OS_MACHINE"."user_modification"            IS 'Utilisateur qui a modifié la ligne';
+
+
 -- Table: DIM_MACHINE
 DROP TABLE IF EXISTS "DIM_MACHINE" CASCADE;
 CREATE TABLE "DIM_MACHINE" (
   "id_machine"          BIGSERIAL PRIMARY KEY,
   "name_machine"        VARCHAR(120),
   "id_type_machine"     BIGINT,
-  "os_machine"          VARCHAR(120),
+  "id_os_machine"       BIGINT,
   "version_machine"     VARCHAR(120),
   "description_machine" TEXT,
   "url_metrics_machine" VARCHAR(255),
@@ -112,7 +136,7 @@ CREATE TABLE "DIM_MACHINE" (
 COMMENT ON COLUMN "DIM_MACHINE"."id_machine"            IS 'ID unique de la machine';
 COMMENT ON COLUMN "DIM_MACHINE"."name_machine"          IS 'Nom de la machine (VSLNAP1, VMDWHTOUL1 etc...)';
 COMMENT ON COLUMN "DIM_MACHINE"."id_type_machine"       IS 'ID du type de la machine (VM, SERVEUR, DOCKER etc...)';
-COMMENT ON COLUMN "DIM_MACHINE"."os_machine"            IS 'Système d exploitation de la machine (Windows, Linux etc...)';
+COMMENT ON COLUMN "DIM_MACHINE"."id_os_machine"         IS 'ID du système d exploitation de la machine (Windows, Linux etc...)';
 COMMENT ON COLUMN "DIM_MACHINE"."version_machine"       IS 'Version de la machine (Windows 11, Linux Debian 12 etc...)';
 COMMENT ON COLUMN "DIM_MACHINE"."description_machine"   IS 'Description de la machine';
 COMMENT ON COLUMN "DIM_MACHINE"."url_metrics_machine"   IS 'URL des métriques de la machine (Ex: http://ip_machine:19999/api/v3/)';
@@ -198,11 +222,15 @@ CREATE TABLE "FCT_VERIF_SYSTEM" (
   "user_modification"   BIGINT
 );
 
--- Comments for DIM_MACHINE table columns
-COMMENT ON COLUMN "DIM_MACHINE"."id_machine"            IS 'ID unique de la machine';
-COMMENT ON COLUMN "DIM_MACHINE"."name_machine"          IS 'Nom de la machine (VSLNAP1, VMDWHTOUL1 etc...)';
-COMMENT ON COLUMN "DIM_MACHINE"."id_type_machine"       IS 'ID du type de la machine (VM, SERVEUR, DOCKER etc...)';
-COMMENT ON COLUMN "DIM_MACHINE"."os_machine"            IS 'Système d exploitation de la machine (Windows, Linux etc...)';
-COMMENT ON COLUMN "DIM_MACHINE"."version_machine"       IS 'Version de la machine (Windows 11, Linux Debian 12 etc...)';
-COMMENT ON COLUMN "DIM_MACHINE"."description_machine"   IS 'Description de la machine';
-COMMENT ON COLUMN "DIM_MACHINE"."description_machine"   IS 'True si la machine est supprimée';
+-- Comments for FCT_VERIF_SYSTEM table columns
+COMMENT ON COLUMN "FCT_VERIF_SYSTEM"."id_verif"           IS 'ID unique de la vérification';
+COMMENT ON COLUMN "FCT_VERIF_SYSTEM"."id_worker"          IS 'ID du worker qui a effectué la vérification';
+COMMENT ON COLUMN "FCT_VERIF_SYSTEM"."id_sys"             IS 'ID du système vérifié';
+COMMENT ON COLUMN "FCT_VERIF_SYSTEM"."id_machine"         IS 'ID de la machine sur laquelle la vérification a été effectuée';
+COMMENT ON COLUMN "FCT_VERIF_SYSTEM"."status"             IS 'Statut de la vérification (OK, WARNING, CRITICAL)';
+COMMENT ON COLUMN "FCT_VERIF_SYSTEM"."details"            IS 'Détails supplémentaires sur la vérification';
+COMMENT ON COLUMN "FCT_VERIF_SYSTEM"."deleted"            IS 'True si la vérification est supprimée';
+COMMENT ON COLUMN "FCT_VERIF_SYSTEM"."creation_date"      IS 'Date de création de la ligne';
+COMMENT ON COLUMN "FCT_VERIF_SYSTEM"."user_creation"      IS 'Utilisateur qui a créé la ligne';
+COMMENT ON COLUMN "FCT_VERIF_SYSTEM"."modification_date"  IS 'Date de modification de la ligne';
+COMMENT ON COLUMN "FCT_VERIF_SYSTEM"."user_modification"  IS 'Utilisateur qui a modifié la ligne';

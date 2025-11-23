@@ -49,6 +49,13 @@ export const createVerifInfos = async (req: Request, res: Response) => {
     try {
         const data = req.body;
         info('verif.createVerifInfos - start', { body: data, user: req.user?.id });
+        // If worker middleware attached a worker, auto-populate IDs from it when not provided
+        const worker: any = (req as any).worker;
+        if (worker) {
+            if (!data.id_worker) data.id_worker = worker.id_worker;
+            if (!data.id_sys) data.id_sys = worker.id_sys;
+            if (!data.id_machine) data.id_machine = worker.id_machine;
+        }
         const resp = await verifService.createVerif(data, req.user?.id);
         info('verif.createVerifInfos - success', { id: (resp as any)?.id_verif });
         res.status(200).json(convertBigIntToString(resp));
