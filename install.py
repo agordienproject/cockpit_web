@@ -121,14 +121,35 @@ def update_docker_compose(compose_path: Path, db_user: str, db_password: str, db
     print(f"✓ Updated docker-compose at {compose_path}")
 
 
+def ensure_monitoring_volumes(compose_path: Path, prometheus_volume: str = "prometheus_data", grafana_volume: str = "grafana_data"):
+    """Make sure docker-compose declares Prometheus and Grafana named volumes.
+
+    This does not modify services; it only ensures the top-level volumes keys are present
+    using the provided names so Docker creates them when bringing the stack up.
+    """
+    ensure_package("pyyaml", "yaml")
+    import yaml  # type: ignore
+
+    with compose_path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+
+    vols = data.setdefault("volumes", {})
+    vols.setdefault(prometheus_volume, None)
+    vols.setdefault(grafana_volume, None)
+
+    with compose_path.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(data, f, sort_keys=False)
+    print(f"✓ Ensured monitoring volumes declared in {compose_path}")
+
+
 def docker_compose_up(compose_path: Path, project_name: str = "database", remove_orphans: bool = False):
     # Prefer modern Docker Compose plugin; set project name for stack grouping.
     if is_command_available(["docker", "compose", "version"]):
-        compose_cmd = ["docker", "compose", "-f", str(compose_path), "-p", project_name, "up", "-d"]
+        compose_cmd = ["docker", "compose", "-f", str(compose_path), "up", "-d"]
         if remove_orphans:
             compose_cmd.append("--remove-orphans")
     elif is_command_available(["docker-compose", "version"]):
-        compose_cmd = ["docker-compose", "-f", str(compose_path), "-p", project_name, "up", "-d"]
+        compose_cmd = ["docker-compose", "-f", str(compose_path), "up", "-d"]
         if remove_orphans:
             compose_cmd.append("--remove-orphans")
     else:
@@ -307,10 +328,12 @@ def import_csvs_from_dir(dir_path: Path, host: str, port: int, user: str, passwo
                         for h in headers:
                             raw = r.get(h)
                             if raw is None or str(raw).strip() == "":
-                                # If column is creation_date and missing, set now()
+                            # If column is creation_date and missing, set now()
                                 if h == "creation_date":
                                     cols.append('"creation_date"')
-                                    vals.append(datetime.utcnow())
+                                    # Use timezone-aware UTC now to avoid deprecation warnings
+                                    from datetime import datetime, timezone
+                                    vals.append(datetime.now(timezone.utc))
                                 else:
                                     # include column with NULL value
                                     cols.append(f'"{h}"')
@@ -389,6 +412,20 @@ def fix_db_sequences(host: str, port: int, user: str, password: str, db_name: st
         conn.close()
 
 
+def test_db_connection(host: str, port: int, user: str, password: str, db_name: str) -> bool:
+    """Attempt a single DB connection and return True if successful, False otherwise."""
+    ensure_package("psycopg2-binary", "psycopg2")
+    import psycopg2  # type: ignore
+
+    try:
+        conn = psycopg2.connect(host=host, port=port, user=user, password=password, dbname=db_name)
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"! Failed to connect to PostgreSQL at {host}:{port} for database '{db_name}': {e}")
+        return False
+
+
 def write_env_file_from_template(template_path: Path, env_path: Path, replacements: dict[str, str]):
     if not template_path.exists():
         raise FileNotFoundError(f"Env template not found: {template_path}")
@@ -447,7 +484,7 @@ def main():
     db_user = db_password = db_name = None
     host_port = None
     if install_db or install_web:
-        ip_addr = prompt_with_default("Enter the IP address of this device", default="localhost")
+        ip_addr = prompt_with_default("Enter DATA host (hostname or IP where Docker data stack runs)", default="localhost")
         db_user = prompt_with_default("PostgreSQL user", default="postgres")
         db_password = prompt_with_default("PostgreSQL password", default="admin", secret=True)
         db_name = prompt_with_default("PostgreSQL database name", default="cockpit_nap")
@@ -482,9 +519,22 @@ def main():
             except Exception:
                 existing_volumes = []
 
-            if svc_name in existing_containers or volume_name in existing_volumes:
+            # Also check monitoring volumes that may already exist
+            monitoring_vols = ["prometheus_data", "grafana_data"]
+            conflicts = []
+            if svc_name in existing_containers:
+                conflicts.append(f"container:{svc_name}")
+            if volume_name in existing_volumes:
+                conflicts.append(f"volume:{volume_name}")
+            for mv in monitoring_vols:
+                if mv in existing_volumes:
+                    conflicts.append(f"volume:{mv}")
+
+            if conflicts:
                 print(f"Detected existing resources: container={svc_name if svc_name in existing_containers else '-'} volume={volume_name if volume_name in existing_volumes else '-'}")
-                replace = prompt_with_default("One or more resources already exist. Replace them? (yes/no)", default="no")
+                if any(v in existing_volumes for v in monitoring_vols):
+                    print("Detected monitoring volumes:", ", ".join([v for v in monitoring_vols if v in existing_volumes]))
+                replace = prompt_with_default("One or more resources already exist (db or monitoring). Replace them? (yes/no)", default="no")
                 if replace.strip().lower() in ("y", "yes"):
                     # remove container if exists
                     if svc_name in existing_containers:
@@ -494,6 +544,11 @@ def main():
                     if volume_name in existing_volumes:
                         print(f"Removing existing volume {volume_name}...")
                         run_command(["docker", "volume", "rm", "-f", volume_name], check=False)
+                    # remove monitoring volumes if exist
+                    for mv in monitoring_vols:
+                        if mv in existing_volumes:
+                            print(f"Removing existing volume {mv}...")
+                            run_command(["docker", "volume", "rm", "-f", mv], check=False)
                 else:
                     print("Aborting installation as requested by user (will not replace existing container/volume).")
                     return
@@ -502,6 +557,9 @@ def main():
 
         # 2) Update docker-compose
         update_docker_compose(compose_path, db_user, db_password, db_name, host_port, svc_name, volume_name)
+
+        # Ensure monitoring volumes are declared
+        ensure_monitoring_volumes(compose_path)
 
         # 3) Start Docker Compose under the 'database' stack.
         docker_compose_up(compose_path, project_name="database", remove_orphans=False)
@@ -512,15 +570,16 @@ def main():
         # 5) Apply DDLs
         apply_sql_file(ddl_inspection_path, ip_addr, host_port, db_user, db_password, db_name)
 
-    # 6) Seed CSVs from example_data (users + referentials)
-    example_data_dir = data_dir / "example_data"
-    import_csvs_from_dir(example_data_dir, ip_addr, host_port, db_user, db_password, db_name)
-    # After seeding CSVs, ensure DB sequences are aligned with imported IDs so future inserts do not
-    # conflict with existing primary keys. This mirrors the 'fixUserIdSequence' logic used elsewhere.
-    try:
-        fix_db_sequences(ip_addr, host_port, db_user, db_password, db_name)
-    except Exception as e:
-        print(f"Warning: failed to fix DB sequences automatically: {e}")
+    # 6) Seed CSVs from example_data (users + referentials) — ONLY when installing DB
+    if install_db:
+        example_data_dir = data_dir / "example_data"
+        import_csvs_from_dir(example_data_dir, ip_addr, host_port, db_user, db_password, db_name)
+        # After seeding CSVs, ensure DB sequences are aligned with imported IDs so future inserts do not
+        # conflict with existing primary keys. This mirrors the 'fixUserIdSequence' logic used elsewhere.
+        try:
+            fix_db_sequences(ip_addr, host_port, db_user, db_password, db_name)
+        except Exception as e:
+            print(f"Warning: failed to fix DB sequences automatically: {e}")
 
     # If WEB installation requested, run backend + frontend steps
     if install_web:
@@ -536,15 +595,29 @@ def main():
             except ValueError as exc:
                 raise SystemExit("Host port must be a number, e.g., 5432") from exc
 
+        # Before proceeding, perform a simple DB connection test (no seeding, no sequence fix)
+        print("→ Testing database connection…")
+        if not test_db_connection(ip_addr, host_port, db_user, db_password, db_name):
+            raise RuntimeError("Database connection failed. Please verify credentials and reachability.")
+
+        # Prompt for backend and frontend hosts (may differ from DB host)
+        backend_host = prompt_with_default("Backend host (for server binding and URLs)", default=ip_addr)
+        frontend_host = prompt_with_default("Frontend host (for dev server binding and URLs)", default=ip_addr)
+
+        # Ask Grafana host and port (data host). Defaults to DB host and 3100.
+        grafana_host = prompt_with_default("Grafana host (data host)", default=ip_addr)
+        grafana_port = prompt_with_default("Grafana port", default="3100")
+
         # 7) Backend setup
         backend_env_tmpl = backend_dir / ".env_template"
         backend_env = backend_dir / ".env"
         # Construct DB URL for backend
         db_url = f"postgresql://{db_user}:{db_password}@{ip_addr}:{host_port}/{db_name}?schema=public"
         backend_replacements = {
-            "GLOBAL_IP": ip_addr,
+            "GLOBAL_IP": backend_host,
             "DATABASE_URL_PSQL": db_url,
-            "FRONTEND_URL": f"http://{ip_addr}:4000",
+            "FRONTEND_URL": f"http://{frontend_host}:4000",
+            "GRAFANA_INTERNAL_URL": f"http://{grafana_host}:{grafana_port}/grafana",
         }
         write_env_file_from_template(backend_env_tmpl, backend_env, backend_replacements)
 
@@ -579,9 +652,10 @@ def main():
         frontend_env_tmpl = frontend_dir / ".env_template"
         frontend_env = frontend_dir / ".env"
         frontend_replacements = {
-            "REACT_APP_API_URL": f"http://{ip_addr}:3000",
-            "REACT_APP_API_BASE_URL": f"http://{ip_addr}:3000/api",
-            "HOST": ip_addr if ip_addr != "127.0.0.1" else "0.0.0.0",
+            "REACT_APP_API_URL": f"http://{backend_host}:3000",
+            "REACT_APP_API_BASE_URL": f"http://{backend_host}:3000/api",
+            "HOST": frontend_host if frontend_host != "127.0.0.1" else "0.0.0.0",
+            "REACT_APP_GRAFANA_URL": f"http://{grafana_host}:{grafana_port}/grafana",
         }
         write_env_file_from_template(frontend_env_tmpl, frontend_env, frontend_replacements)
 

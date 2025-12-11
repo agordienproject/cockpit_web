@@ -138,7 +138,7 @@ export default function Dashboard() {
 
         <Card className="flex flex-col justify-between">
           <div>
-            <Title>Dashboards Windows</Title>
+            <Title>Dashboards des machines</Title>
             <Text className="mt-2 text-sm">Visualiser les métriques système (CPU, RAM, Disque, Réseau).</Text>
           </div>
           <Link
