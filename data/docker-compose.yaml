@@ -25,12 +25,55 @@ services:
     - --config.file=/etc/prometheus/prometheus.yml
     - --storage.tsdb.retention.time=30d
     - --web.enable-lifecycle
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_exporter
+    restart: unless-stopped
+    ports:
+    - 9187:9187
+    environment:
+      PG_EXPORTER_WEB_TELEMETRY_PATH: /metrics
+    volumes:
+    - ./metrics/postgres_exporter.yml:/etc/postgres_exporter/postgres_exporter.yml:ro
+    command:
+    - --config.file=/etc/postgres_exporter/postgres_exporter.yml
+    depends_on:
+    - postgres_nap
+
+  mysql_exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysql_exporter
+    restart: unless-stopped
+    ports:
+    - 9104:9104
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+    - ./metrics/.my.cnf:/etc/mysql/.my.cnf:ro
+    command:
+    - --config.my-cnf=/etc/mysql/.my.cnf
+
+  mssql_exporter:
+    image: awaragi/prometheus-mssql-exporter:latest
+    container_name: mssql_exporter
+    restart: unless-stopped
+    ports:
+    - 4860:4860
+    environment:
+      SERVER: "host.docker.internal"
+      PORT: "1433"
+      USERNAME: "sa"
+      PASSWORD: "YourPassword123!"
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     restart: unless-stopped
     depends_on:
     - prometheus
+    - postgres_exporter
+    - mysql_exporter
+    - mssql_exporter
     ports:
     - 3100:3000
     environment:
@@ -48,3 +91,4 @@ volumes:
   pgdata1: null
   prometheus_data: null
   grafana_data: null
+  mssql_data: null

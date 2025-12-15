@@ -23,6 +23,12 @@ export default function AdminSystems() {
   const [typeQuery, setTypeQuery] = useState('');
   const [machineQuery, setMachineQuery] = useState('');
   const [serviceQuery, setServiceQuery] = useState('');
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [showMachineDropdown, setShowMachineDropdown] = useState(false);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  const [showEditTypeDropdown, setShowEditTypeDropdown] = useState(false);
+  const [showEditMachineDropdown, setShowEditMachineDropdown] = useState(false);
+  const [showEditServiceDropdown, setShowEditServiceDropdown] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -107,48 +113,90 @@ export default function AdminSystems() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Type</label>
-              <TextInput className="mb-2" placeholder="Search type..." value={typeQuery} onChange={e => setTypeQuery(e.target.value)} />
-              <Select value={newItem.id_type_sys} onValueChange={val => setNewItem({ ...newItem, id_type_sys: val })}>
-                <SelectItem value={''}>None</SelectItem>
-                {types
-                  .filter(Boolean)
-                  .filter(t => !typeQuery || (t.name_type_sys || '').toString().toLowerCase().includes(typeQuery.toLowerCase()))
-                  .slice(0, 20)
-                  .map(t => <SelectItem key={t.id_type_sys} value={String(t.id_type_sys)}>{t.name_type_sys}</SelectItem>)}
-              </Select>
-              {types.length > 20 && (
-                <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, types.length)} of {types.length}. Refine search to find other options.</div>
-              )}
+              <div className="space-y-2" onMouseDown={(e) => e.preventDefault()}>
+                <TextInput 
+                  className="w-full cursor-pointer" 
+                  placeholder="Search type..." 
+                  value={newItem.id_type_sys ? (types.find(t => String(t.id_type_sys) === String(newItem.id_type_sys))?.name_type_sys || '') : typeQuery}
+                  onChange={e => setTypeQuery(e.target.value)} 
+                  onMouseDown={(e) => { e.preventDefault(); setShowTypeDropdown(true); }}
+                />
+                {showTypeDropdown && (
+                  <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white">
+                    <div className="p-2 hover:bg-gray-100 cursor-pointer" onMouseDown={(e) => { console.log('Clicked None for type'); e.preventDefault(); e.stopPropagation(); setNewItem({ ...newItem, id_type_sys: '' }); setTypeQuery(''); setShowTypeDropdown(false); }}>
+                      None
+                    </div>
+                    {types
+                      .filter(Boolean)
+                      .filter(t => !typeQuery || (t.name_type_sys || '').toString().toLowerCase().includes(typeQuery.toLowerCase()))
+                      .map(t => (
+                        <div
+                          key={t.id_type_sys}
+                          className="p-2 hover:bg-gray-100 cursor-pointer border-t border-gray-200"
+                          onMouseDown={(e) => { console.log('Clicked type:', t.name_type_sys); e.preventDefault(); e.stopPropagation(); setNewItem({ ...newItem, id_type_sys: String(t.id_type_sys) }); setTypeQuery(''); setShowTypeDropdown(false); }}
+                        >
+                          {t.name_type_sys}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Machine</label>
-              <TextInput className="mb-2" placeholder="Search machine..." value={machineQuery} onChange={e => setMachineQuery(e.target.value)} />
-              <Select value={newItem.id_machine_sys} onValueChange={val => setNewItem({ ...newItem, id_machine_sys: val })}>
-                <SelectItem value={''}>None</SelectItem>
-                {machines
-                  .filter(Boolean)
-                  .filter(m => !machineQuery || (m.name_machine || '').toString().toLowerCase().includes(machineQuery.toLowerCase()))
-                  .slice(0, 20)
-                  .map(m => <SelectItem key={m.id_machine} value={String(m.id_machine)}>{m.name_machine}</SelectItem>)}
-              </Select>
-              {machines.length > 20 && (
-                <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, machines.length)} of {machines.length}. Refine search to find other options.</div>
-              )}
+              <div className="space-y-2" onMouseDown={(e) => e.preventDefault()}>
+                <TextInput className="w-full cursor-pointer" placeholder="Search machine..." value={newItem.id_machine_sys ? (machines.find(m => String(m.id_machine) === String(newItem.id_machine_sys))?.name_machine || '') : machineQuery} onChange={e => setMachineQuery(e.target.value)} onMouseDown={(e) => { e.preventDefault(); setShowMachineDropdown(true); }} />
+                {showMachineDropdown && (
+                  <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white">
+                    <div className="p-2 hover:bg-gray-100 cursor-pointer" onMouseDown={(e) => { console.log('Clicked None for machine'); e.preventDefault(); e.stopPropagation(); setNewItem({ ...newItem, id_machine_sys: '' }); setMachineQuery(''); setShowMachineDropdown(false); }}>
+                      None
+                    </div>
+                    {machines
+                      .filter(Boolean)
+                      .filter(m => !machineQuery || (m.name_machine || '').toString().toLowerCase().includes(machineQuery.toLowerCase()))
+                      .map(m => (
+                        <div
+                          key={m.id_machine}
+                          className="p-2 hover:bg-gray-100 cursor-pointer border-t border-gray-200"
+                          onMouseDown={(e) => { console.log('Clicked machine:', m.name_machine); e.preventDefault(); e.stopPropagation(); setNewItem({ ...newItem, id_machine_sys: String(m.id_machine) }); setMachineQuery(''); setShowMachineDropdown(false); }}
+                        >
+                          {m.name_machine}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Service</label>
-              <TextInput className="mb-2" placeholder="Search service..." value={serviceQuery} onChange={e => setServiceQuery(e.target.value)} />
-              <Select value={newItem.id_service_sys} onValueChange={val => setNewItem({ ...newItem, id_service_sys: val })}>
-                <SelectItem value={''}>None</SelectItem>
-                {services
-                  .filter(Boolean)
-                  .filter(svc => !serviceQuery || (svc.name_service || '').toString().toLowerCase().includes(serviceQuery.toLowerCase()))
-                  .slice(0, 20)
-                  .map(svc => <SelectItem key={svc.id_service} value={String(svc.id_service)}>{svc.name_service}</SelectItem>)}
-              </Select>
-              {services.length > 20 && (
-                <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, services.length)} of {services.length}. Refine search to find other options.</div>
-              )}
+              <div className="space-y-2" onMouseDown={(e) => e.preventDefault()}>
+                <TextInput 
+                  className="w-full cursor-pointer" 
+                  placeholder="Search service..." 
+                  value={newItem.id_service_sys ? (services.find(s => String(s.id_service) === String(newItem.id_service_sys))?.name_service || '') : serviceQuery}
+                  onChange={e => setServiceQuery(e.target.value)} 
+                  onMouseDown={(e) => { e.preventDefault(); setShowServiceDropdown(true); }}
+                />
+                {showServiceDropdown && (
+                  <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white">
+                    <div className="p-2 hover:bg-gray-100 cursor-pointer" onMouseDown={(e) => { console.log('Clicked None for service'); e.preventDefault(); e.stopPropagation(); setNewItem({ ...newItem, id_service_sys: '' }); setServiceQuery(''); setShowServiceDropdown(false); }}>
+                      None
+                    </div>
+                    {services
+                      .filter(Boolean)
+                      .filter(svc => !serviceQuery || (svc.name_service || '').toString().toLowerCase().includes(serviceQuery.toLowerCase()))
+                      .map(svc => (
+                        <div
+                          key={svc.id_service}
+                          className="p-2 hover:bg-gray-100 cursor-pointer border-t border-gray-200"
+                          onMouseDown={(e) => { console.log('Clicked service:', svc.name_service); e.preventDefault(); e.stopPropagation(); setNewItem({ ...newItem, id_service_sys: String(svc.id_service) }); setServiceQuery(''); setShowServiceDropdown(false); }}
+                        >
+                          {svc.name_service}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="col-span-full">
               <label className="block text-sm font-medium text-gray-700">Description</label>
@@ -187,18 +235,26 @@ export default function AdminSystems() {
                   <TableCell>{editing?.id_sys === s.id_sys ? (<TextInput value={editing.version_sys} onChange={e => setEditing({ ...editing, version_sys: e.target.value })} />) : (s.version_sys || '-')}</TableCell>
                   <TableCell>
                     {editing?.id_sys === s.id_sys ? (
-                      <div>
-                        <TextInput className="mb-2" placeholder="Search type..." value={typeQuery} onChange={e => setTypeQuery(e.target.value)} />
-                        <Select value={editing.id_type_sys} onValueChange={val => setEditing({ ...editing, id_type_sys: val })}>
-                          <SelectItem value={''}>None</SelectItem>
-                          {types
-                            .filter(Boolean)
-                            .filter(t => !typeQuery || (t.name_type_sys || '').toString().toLowerCase().includes(typeQuery.toLowerCase()))
-                            .slice(0, 20)
-                            .map(t => <SelectItem key={t.id_type_sys} value={String(t.id_type_sys)}>{t.name_type_sys}</SelectItem>)}
-                        </Select>
-                        {types.length > 20 && (
-                          <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, types.length)} of {types.length}. Refine search to find other options.</div>
+                      <div className="space-y-2" onMouseDown={(e) => e.preventDefault()}>
+                        <TextInput className="w-full cursor-pointer" placeholder="Search type..." value={editing.id_type_sys ? (types.find(t => String(t.id_type_sys) === String(editing.id_type_sys))?.name_type_sys || '') : typeQuery} onChange={e => setTypeQuery(e.target.value)} onMouseDown={(e) => { e.preventDefault(); setShowEditTypeDropdown(true); }} />
+                        {showEditTypeDropdown && (
+                          <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white">
+                            <div className="p-2 hover:bg-gray-100 cursor-pointer text-sm" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setEditing({ ...editing, id_type_sys: '' }); setTypeQuery(''); setShowEditTypeDropdown(false); }}>
+                              None
+                            </div>
+                            {types
+                              .filter(Boolean)
+                              .filter(t => !typeQuery || (t.name_type_sys || '').toString().toLowerCase().includes(typeQuery.toLowerCase()))
+                              .map(t => (
+                                <div
+                                  key={t.id_type_sys}
+                                  className="p-2 hover:bg-gray-100 cursor-pointer border-t border-gray-200 text-sm"
+                                  onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setEditing({ ...editing, id_type_sys: String(t.id_type_sys) }); setTypeQuery(''); setShowEditTypeDropdown(false); }}
+                                >
+                                  {t.name_type_sys}
+                                </div>
+                              ))}
+                          </div>
                         )}
                       </div>
                     ) : (
@@ -207,18 +263,26 @@ export default function AdminSystems() {
                   </TableCell>
                   <TableCell>
                     {editing?.id_sys === s.id_sys ? (
-                      <div>
-                        <TextInput className="mb-2" placeholder="Search machine..." value={machineQuery} onChange={e => setMachineQuery(e.target.value)} />
-                        <Select value={editing.id_machine_sys} onValueChange={val => setEditing({ ...editing, id_machine_sys: val })}>
-                          <SelectItem value={''}>None</SelectItem>
-                          {machines
-                            .filter(Boolean)
-                            .filter(m => !machineQuery || (m.name_machine || '').toString().toLowerCase().includes(machineQuery.toLowerCase()))
-                            .slice(0, 20)
-                            .map(m => <SelectItem key={m.id_machine} value={String(m.id_machine)}>{m.name_machine}</SelectItem>)}
-                        </Select>
-                        {machines.length > 20 && (
-                          <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, machines.length)} of {machines.length}. Refine search to find other options.</div>
+                      <div className="space-y-2" onMouseDown={(e) => e.preventDefault()}>
+                        <TextInput className="w-full cursor-pointer" placeholder="Search machine..." value={editing.id_machine_sys ? (machines.find(m => String(m.id_machine) === String(editing.id_machine_sys))?.name_machine || '') : machineQuery} onChange={e => setMachineQuery(e.target.value)} onMouseDown={(e) => { e.preventDefault(); setShowEditMachineDropdown(true); }} />
+                        {showEditMachineDropdown && (
+                          <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white">
+                            <div className="p-2 hover:bg-gray-100 cursor-pointer text-sm" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setEditing({ ...editing, id_machine_sys: '' }); setMachineQuery(''); setShowEditMachineDropdown(false); }}>
+                              None
+                            </div>
+                            {machines
+                              .filter(Boolean)
+                              .filter(m => !machineQuery || (m.name_machine || '').toString().toLowerCase().includes(machineQuery.toLowerCase()))
+                              .map(m => (
+                                <div
+                                  key={m.id_machine}
+                                  className="p-2 hover:bg-gray-100 cursor-pointer border-t border-gray-200 text-sm"
+                                  onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setEditing({ ...editing, id_machine_sys: String(m.id_machine) }); setMachineQuery(''); setShowEditMachineDropdown(false); }}
+                                >
+                                  {m.name_machine}
+                                </div>
+                              ))}
+                          </div>
                         )}
                       </div>
                     ) : (

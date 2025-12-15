@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
 import machineRoutes from "./routes/machine.routes";
+import databaseRoutes from "./routes/database.routes";
 import systemRoutes from "./routes/system.routes";
 import verifRoutes from "./routes/verif.routes";
 import workerRoutes from "./routes/worker.routes";
@@ -30,6 +31,7 @@ app.use(cors({
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/machines", machineRoutes);
+app.use("/api/databases", databaseRoutes);
 app.use("/api/systems", systemRoutes);
 app.use("/api/verifications", verifRoutes);
 app.use("/api/dashboards", dashboardRoutes);

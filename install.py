@@ -51,8 +51,13 @@ def run_command(cmd: list[str], cwd: Path | None = None, env: dict | None = None
     return res.returncode
 
 
-# Simple, cross-platform helper to remove a directory tree.
-# Uses shutil.rmtree with a tiny onerror that clears read-only attr on Windows.
+def rmtree_safe(path: Path):
+    """Remove a directory tree if it exists, ignoring errors."""
+    if path.exists():
+        try:
+            shutil.rmtree(path)
+        except Exception as e:
+            print(f"Warning: failed to remove directory {path}: {e}")
 
 
 def resolve_command(candidates: list[str]) -> list[str]:
@@ -496,11 +501,28 @@ def main():
 
     # If DB installation requested, run DB steps
     if install_db:
+        # Clean Prisma generated client if present (safe auto-removal during data setup)
+        if prisma_generated_dir.exists():
+            print(f"→ Removing existing Prisma generated client: {prisma_generated_dir}")
+            rmtree_safe(prisma_generated_dir)
+            print("✓ Removed Prisma generated client")
+
         # Ask for container (service) name and volume name to use in docker-compose
         default_svc = "postgres_nap"
         default_vol = "pgdata1"
+        default_prom_svc = "prometheus"
+        default_prom_vol = "prometheus_data"
+        default_graf_svc = "grafana"
+        default_graf_vol = "grafana_data"
+        default_graf_port = "3100"
+        
         svc_name = prompt_with_default("Docker service name for Postgres (container name)", default=default_svc)
         volume_name = prompt_with_default("Docker volume name for Postgres data", default=default_vol)
+        prom_svc_name = prompt_with_default("Docker service name for Prometheus (container name)", default=default_prom_svc)
+        prom_volume_name = prompt_with_default("Docker volume name for Prometheus data", default=default_prom_vol)
+        graf_svc_name = prompt_with_default("Docker service name for Grafana (container name)", default=default_graf_svc)
+        graf_volume_name = prompt_with_default("Docker volume name for Grafana data", default=default_graf_vol)
+        grafana_port = prompt_with_default("Grafana port (host side)", default=default_graf_port)
 
         # If docker is available, check whether a container or volume with those names already exists
         docker_available = is_command_available(["docker", "--version"]) or is_command_available(["docker", "version"])
@@ -519,39 +541,66 @@ def main():
             except Exception:
                 existing_volumes = []
 
-            # Also check monitoring volumes that may already exist
-            monitoring_vols = ["prometheus_data", "grafana_data"]
-            conflicts = []
+            # Check for postgres container/volume conflicts
+            postgres_conflicts = []
             if svc_name in existing_containers:
-                conflicts.append(f"container:{svc_name}")
+                postgres_conflicts.append(f"container:{svc_name}")
             if volume_name in existing_volumes:
-                conflicts.append(f"volume:{volume_name}")
-            for mv in monitoring_vols:
-                if mv in existing_volumes:
-                    conflicts.append(f"volume:{mv}")
-
-            if conflicts:
-                print(f"Detected existing resources: container={svc_name if svc_name in existing_containers else '-'} volume={volume_name if volume_name in existing_volumes else '-'}")
-                if any(v in existing_volumes for v in monitoring_vols):
-                    print("Detected monitoring volumes:", ", ".join([v for v in monitoring_vols if v in existing_volumes]))
-                replace = prompt_with_default("One or more resources already exist (db or monitoring). Replace them? (yes/no)", default="no")
-                if replace.strip().lower() in ("y", "yes"):
-                    # remove container if exists
+                postgres_conflicts.append(f"volume:{volume_name}")
+            
+            if postgres_conflicts:
+                print(f"Detected existing Postgres resources: {', '.join(postgres_conflicts)}")
+                replace_pg = prompt_with_default("Replace existing Postgres container/volume? (yes/no)", default="no")
+                if replace_pg.strip().lower() in ("y", "yes"):
                     if svc_name in existing_containers:
                         print(f"Removing existing container {svc_name}...")
                         run_command(["docker", "rm", "-f", svc_name], check=False)
-                    # remove volume if exists
                     if volume_name in existing_volumes:
                         print(f"Removing existing volume {volume_name}...")
                         run_command(["docker", "volume", "rm", "-f", volume_name], check=False)
-                    # remove monitoring volumes if exist
-                    for mv in monitoring_vols:
-                        if mv in existing_volumes:
-                            print(f"Removing existing volume {mv}...")
-                            run_command(["docker", "volume", "rm", "-f", mv], check=False)
                 else:
-                    print("Aborting installation as requested by user (will not replace existing container/volume).")
+                    print("Aborting installation as requested by user (will not replace existing Postgres container/volume).")
                     return
+
+            # Check for prometheus container/volume conflicts
+            prom_conflicts = []
+            if prom_svc_name in existing_containers:
+                prom_conflicts.append(f"container:{prom_svc_name}")
+            if prom_volume_name in existing_volumes:
+                prom_conflicts.append(f"volume:{prom_volume_name}")
+            
+            if prom_conflicts:
+                print(f"Detected existing Prometheus resources: {', '.join(prom_conflicts)}")
+                replace_prom = prompt_with_default("Replace existing Prometheus container/volume? (yes/no)", default="no")
+                if replace_prom.strip().lower() in ("y", "yes"):
+                    if prom_svc_name in existing_containers:
+                        print(f"Removing existing container {prom_svc_name}...")
+                        run_command(["docker", "rm", "-f", prom_svc_name], check=False)
+                    if prom_volume_name in existing_volumes:
+                        print(f"Removing existing volume {prom_volume_name}...")
+                        run_command(["docker", "volume", "rm", "-f", prom_volume_name], check=False)
+                else:
+                    print("Will reuse existing Prometheus container/volume.")
+
+            # Check for grafana container/volume conflicts
+            graf_conflicts = []
+            if graf_svc_name in existing_containers:
+                graf_conflicts.append(f"container:{graf_svc_name}")
+            if graf_volume_name in existing_volumes:
+                graf_conflicts.append(f"volume:{graf_volume_name}")
+            
+            if graf_conflicts:
+                print(f"Detected existing Grafana resources: {', '.join(graf_conflicts)}")
+                replace_graf = prompt_with_default("Replace existing Grafana container/volume? (yes/no)", default="no")
+                if replace_graf.strip().lower() in ("y", "yes"):
+                    if graf_svc_name in existing_containers:
+                        print(f"Removing existing container {graf_svc_name}...")
+                        run_command(["docker", "rm", "-f", graf_svc_name], check=False)
+                    if graf_volume_name in existing_volumes:
+                        print(f"Removing existing volume {graf_volume_name}...")
+                        run_command(["docker", "volume", "rm", "-f", graf_volume_name], check=False)
+                else:
+                    print("Will reuse existing Grafana container/volume.")
         else:
             print("Warning: Docker not found on PATH; continuing but resource existence cannot be checked.")
 
@@ -608,6 +657,10 @@ def main():
         grafana_host = prompt_with_default("Grafana host (data host)", default=ip_addr)
         grafana_port = prompt_with_default("Grafana port", default="3100")
 
+        # Frontend environment variables for API and Grafana URLs
+        frontend_api_url = prompt_with_default("Frontend: Backend API URL (e.g., http://localhost:3000)", default=f"http://{frontend_host}:3000")
+        frontend_grafana_url = prompt_with_default("Frontend: Grafana proxy URL (e.g., http://localhost:3100/grafana)", default=f"http://{frontend_host}:3100/grafana")
+
         # 7) Backend setup
         backend_env_tmpl = backend_dir / ".env_template"
         backend_env = backend_dir / ".env"
@@ -652,10 +705,10 @@ def main():
         frontend_env_tmpl = frontend_dir / ".env_template"
         frontend_env = frontend_dir / ".env"
         frontend_replacements = {
-            "REACT_APP_API_URL": f"http://{backend_host}:3000",
-            "REACT_APP_API_BASE_URL": f"http://{backend_host}:3000/api",
+            "REACT_APP_API_URL": frontend_api_url,
+            "REACT_APP_API_BASE_URL": f"{frontend_api_url}/api",
+            "REACT_APP_GRAFANA_URL": frontend_grafana_url,
             "HOST": frontend_host if frontend_host != "127.0.0.1" else "0.0.0.0",
-            "REACT_APP_GRAFANA_URL": f"http://{grafana_host}:{grafana_port}/grafana",
         }
         write_env_file_from_template(frontend_env_tmpl, frontend_env, frontend_replacements)
 

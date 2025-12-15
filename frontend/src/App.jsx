@@ -6,6 +6,7 @@ import UserProfile from './pages/UserProfile';
 import AdminUsers from './pages/AdminUsers';
 import AdminWorkers from './pages/AdminWorkers';
 import AdminMachines from './pages/AdminMachines';
+import AdminDatabases from './pages/AdminDatabases';
 import AdminSystems from './pages/AdminSystems';
 import AdminReferentials from './pages/AdminReferentials';
 import AdminRefList from './pages/AdminRefList';
@@ -14,10 +15,13 @@ import Systems from './pages/Systems';
 import SystemDetails from './pages/SystemDetails';
 import Machines from './pages/Machines';
 import MachineDetails from './pages/MachineDetails';
+import Databases from './pages/Databases';
+import DatabaseDetails from './pages/DatabaseDetails';
 import Workers from './pages/Workers';
 import WorkerDetails from './pages/WorkerDetails';
 import UnknownPage from './pages/UnknownPage';
 import MachineDashboards from './pages/MachineDashboards';
+import DatabaseDashboards from './pages/DatabaseDashboards';
 
 function App() {
   // Initialize from localStorage if present
@@ -86,6 +90,14 @@ function App() {
           </ProtectedRoute>
         } />
 
+        <Route path="/dashboards/databases" element={
+          <ProtectedRoute>
+            <Layout userRole={userRole} key={userRole}>
+              <DatabaseDashboards />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
         <Route path="/profile" element={
           <ProtectedRoute>
             <Layout userRole={userRole} key={userRole}>
@@ -114,6 +126,14 @@ function App() {
           <ProtectedRoute allowedRoles={['admin', 'chief']}>
             <Layout userRole={userRole} key={userRole}>
               <AdminMachines />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/databases" element={
+          <ProtectedRoute allowedRoles={['admin', 'chief']}>
+            <Layout userRole={userRole} key={userRole}>
+              <AdminDatabases />
             </Layout>
           </ProtectedRoute>
         } />
@@ -196,6 +216,22 @@ function App() {
           <ProtectedRoute>
             <Layout userRole={userRole} key={userRole}>
               <MachineDetails />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/databases" element={
+          <ProtectedRoute>
+            <Layout userRole={userRole} key={userRole}>
+              <Databases />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/databases/:id" element={
+          <ProtectedRoute>
+            <Layout userRole={userRole} key={userRole}>
+              <DatabaseDetails />
             </Layout>
           </ProtectedRoute>
         } />

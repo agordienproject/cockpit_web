@@ -11,6 +11,9 @@ import {
   Cog6ToothIcon,
   ComputerDesktopIcon,
   XMarkIcon,
+  ServerStackIcon,
+  DocumentTextIcon,
+  WrenchIcon,
 } from '@heroicons/react/24/outline';
 
 function classNames(...classes) {
@@ -28,14 +31,14 @@ export default function Layout({ children, userRole }) {
   const navigation = [
     // Main home/overview
     { name: 'Home', href: '/dashboard', icon: HomeIcon },
-  // Changed icons: Systems -> gear (system settings), Machines -> desktop/screen, Workers -> gear
-  { name: 'Systems', href: '/systems', icon: Cog6ToothIcon },
+    { name: 'Systems', href: '/systems', icon: Cog6ToothIcon },
     { name: 'Machines', href: '/machines', icon: ComputerDesktopIcon },
-    { name: 'Workers', href: '/workers', icon: Cog6ToothIcon },
+    { name: 'Databases', href: '/databases', icon: ServerStackIcon },
+    { name: 'Workers', href: '/workers', icon: WrenchIcon },
     { name: 'Profile', href: '/profile', icon: UserIcon },
     ...(userRole === 'admin' ? [
       { name: 'Manage Users', href: '/admin/users', icon: UsersIcon },
-      { name: 'Referentials', href: '/admin/ref', icon: UsersIcon }
+      { name: 'Referentials', href: '/admin/ref', icon: DocumentTextIcon }
     ] : []),
   ];
 

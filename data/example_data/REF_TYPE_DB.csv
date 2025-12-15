@@ -1,0 +1,9 @@
+id_type_db;name_type_db;description_type_db;deleted
+1;PostgreSQL;Base de données relationnelle open source (PGSQL);false
+2;MySQL;Base de données relationnelle open source (Oracle MySQL);false
+3;MariaDB;Fork de MySQL, compatible MySQL;false
+4;SQL Server;Base de données relationnelle Microsoft SQL Server;false
+5;Oracle;Base de données relationnelle Oracle Database;false
+6;SQLite;Base de données embarquée (fichier unique);false
+7;MongoDB;Base de données documentaire (NoSQL);false
+8;Redis;Base clé-valeur en mémoire, persistance optionnelle;false

@@ -130,3 +130,31 @@ model REF_OS_MACHINE {
   modification_date      DateTime? @db.Timestamp(6)
   user_modification      BigInt?
 }
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model DIM_DATABASE {
+  id_db             BigInt    @id @default(autoincrement())
+  name_db           String?   @db.VarChar(120)
+  id_type_db        BigInt?
+  id_machine        BigInt?
+  version_db        String?   @db.VarChar(120)
+  description_db    String?
+  url_metrics_db    String?   @db.VarChar(255)
+  deleted           Boolean?  @default(false)
+  creation_date     DateTime? @db.Timestamp(6)
+  user_creation     BigInt?
+  modification_date DateTime? @db.Timestamp(6)
+  user_modification BigInt?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model REF_TYPE_DB {
+  id_type_db          BigInt    @id @default(autoincrement())
+  name_type_db        String?   @db.VarChar(120)
+  description_type_db String?
+  deleted             Boolean?  @default(false)
+  creation_date       DateTime? @db.Timestamp(6)
+  user_creation       BigInt?
+  modification_date   DateTime? @db.Timestamp(6)
+  user_modification   BigInt?
+}

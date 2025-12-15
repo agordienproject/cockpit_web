@@ -24,6 +24,8 @@ export default function AdminUsers() {
   const [editingUser, setEditingUser] = useState(null);
   const [services, setServices] = useState([]);
   const [serviceQuery, setServiceQuery] = useState('');
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  const [showEditServiceDropdown, setShowEditServiceDropdown] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({
     first_name: '',
@@ -261,24 +263,28 @@ export default function AdminUsers() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Service</label>
-              <TextInput className="mb-2" placeholder="Search service..." value={serviceQuery} onChange={e => setServiceQuery(e.target.value)} />
-              <Select
-                value={newUser.id_service}
-                onValueChange={(value) => setNewUser({ ...newUser, id_service: value })}
-                disabled={saving}
-              >
-                <SelectItem value={''}>None</SelectItem>
-                {services
-                  .filter(Boolean)
-                  .filter(s => !serviceQuery || (s.name_service || '').toString().toLowerCase().includes(serviceQuery.toLowerCase()))
-                  .slice(0, 20)
-                  .map(s => (
-                    <SelectItem key={s.id_service} value={String(s.id_service)}>{s.name_service}</SelectItem>
-                  ))}
-              </Select>
-              {services.length > 20 && (
-                <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, services.length)} of {services.length}. Refine search to find other options.</div>
-              )}
+              <div className="space-y-2" onMouseDown={(e) => e.preventDefault()}>
+                <TextInput className="w-full cursor-pointer" placeholder="Search service..." value={newUser.id_service ? (services.find(s => String(s.id_service) === String(newUser.id_service))?.name_service || '') : serviceQuery} onChange={e => setServiceQuery(e.target.value)} onMouseDown={(e) => { e.preventDefault(); setShowServiceDropdown(true); }} />
+                {showServiceDropdown && (
+                  <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white">
+                    <div className="p-2 hover:bg-gray-100 cursor-pointer" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setNewUser({ ...newUser, id_service: '' }); setServiceQuery(''); setShowServiceDropdown(false); }}>
+                      None
+                    </div>
+                    {services
+                      .filter(Boolean)
+                      .filter(s => !serviceQuery || (s.name_service || '').toString().toLowerCase().includes(serviceQuery.toLowerCase()))
+                      .map(s => (
+                        <div
+                          key={s.id_service}
+                          className="p-2 hover:bg-gray-100 cursor-pointer border-t border-gray-200"
+                          onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setNewUser({ ...newUser, id_service: String(s.id_service) }); setServiceQuery(''); setShowServiceDropdown(false); }}
+                        >
+                          {s.name_service}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Password</label>
@@ -450,25 +456,26 @@ export default function AdminUsers() {
                   </TableCell>
                   <TableCell>
                     {editingUser?.id_user === user.id_user ? (
-                      <div>
-                        <TextInput className="mb-2" placeholder="Search service..." value={serviceQuery} onChange={e => setServiceQuery(e.target.value)} />
-                        <Select
-                          className="mt-1 w-full"
-                          value={editingUser.id_service}
-                          onValueChange={(value) => setEditingUser({ ...editingUser, id_service: value })}
-                          disabled={saving}
-                        >
-                          <SelectItem value={''}>None</SelectItem>
-                          {services
-                            .filter(Boolean)
-                            .filter(s => !serviceQuery || (s.name_service || '').toString().toLowerCase().includes(serviceQuery.toLowerCase()))
-                            .slice(0, 20)
-                            .map(s => (
-                              <SelectItem key={s.id_service} value={String(s.id_service)}>{s.name_service}</SelectItem>
-                            ))}
-                        </Select>
-                        {services.length > 20 && (
-                          <div className="text-xs text-gray-500 mt-1">Showing {Math.min(20, services.length)} of {services.length}. Refine search to find other options.</div>
+                      <div className="space-y-2" onMouseDown={(e) => e.preventDefault()}>
+                        <TextInput className="w-full cursor-pointer" placeholder="Search service..." value={editingUser.id_service ? (services.find(s => String(s.id_service) === String(editingUser.id_service))?.name_service || '') : serviceQuery} onChange={e => setServiceQuery(e.target.value)} onMouseDown={(e) => { e.preventDefault(); setShowEditServiceDropdown(true); }} />
+                        {showEditServiceDropdown && (
+                          <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white">
+                            <div className="p-2 hover:bg-gray-100 cursor-pointer text-sm" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setEditingUser({ ...editingUser, id_service: '' }); setServiceQuery(''); setShowEditServiceDropdown(false); }}>
+                              None
+                            </div>
+                            {services
+                              .filter(Boolean)
+                              .filter(s => !serviceQuery || (s.name_service || '').toString().toLowerCase().includes(serviceQuery.toLowerCase()))
+                              .map(s => (
+                                <div
+                                  key={s.id_service}
+                                  className="p-2 hover:bg-gray-100 cursor-pointer border-t border-gray-200 text-sm"
+                                  onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setEditingUser({ ...editingUser, id_service: String(s.id_service) }); setServiceQuery(''); setShowEditServiceDropdown(false); }}
+                                >
+                                  {s.name_service}
+                                </div>
+                              ))}
+                          </div>
                         )}
                       </div>
                     ) : (

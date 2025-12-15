@@ -1,0 +1,16 @@
+# MSSQL Exporter Configuration
+# Define multiple SQL Server instances here
+
+global:
+  scrape_interval: 30s
+
+jobs:
+  - job_name: mssql_local
+    connection_string: "Server=host.docker.internal,1433;User Id=sa;Password=YourPassword;"
+    
+  # Add additional SQL Server instances below
+  # - job_name: mssql_prod
+  #   connection_string: "Server=10.224.16.203,1433;User Id=sa;Password=ProdPassword;"
+  #
+  # - job_name: mssql_backup
+  #   connection_string: "Server=backup-server,1433;User Id=sa;Password=BackupPassword;"

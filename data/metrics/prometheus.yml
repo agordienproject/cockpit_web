@@ -29,7 +29,26 @@ scrape_configs:
         target_label: instance
       - source_labels: [machine]
         target_label: machine
-      - source_labels: [os]
-        target_label: os
+  # PostgreSQL metrics via postgres_exporter (multi-target support)
+  - job_name: postgres
+    static_configs:
+      - targets:
+        - postgres_nap:5432
+    metrics_path: /probe
+    params:
+      auth_module: [default]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: host.docker.internal:9187
+
+  # MySQL metrics via mysqld_exporter
+  - job_name: mysql
+    static_configs:
+      - targets: ['mysql_exporter:9104']
+    metrics_path: /metrics
 
 # Optional: add alerts by including rule_files and Alertmanager config later.

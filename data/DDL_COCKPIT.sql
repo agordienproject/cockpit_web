@@ -114,6 +114,62 @@ COMMENT ON COLUMN "REF_OS_MACHINE"."user_creation"                IS 'Utilisateu
 COMMENT ON COLUMN "REF_OS_MACHINE"."modification_date"            IS 'Date de modification de la ligne';
 COMMENT ON COLUMN "REF_OS_MACHINE"."user_modification"            IS 'Utilisateur qui a modifié la ligne';
 
+-- Table: REF_TYPE_DB
+DROP TABLE IF EXISTS "REF_TYPE_DB" CASCADE;
+CREATE TABLE "REF_TYPE_DB" (
+  "id_type_db"            BIGSERIAL Primary Key,
+  "name_type_db"          VARCHAR(120),
+  "description_type_db"   TEXT,
+  "deleted"               BOOLEAN DEFAULT FALSE,
+  "creation_date"         TIMESTAMP,
+  "user_creation"         BIGINT,
+  "modification_date"     TIMESTAMP,
+  "user_modification"     BIGINT
+);
+
+-- Comments for REF_TYPE_DB table columns
+COMMENT ON COLUMN "REF_TYPE_DB"."id_type_db"           IS 'ID unique du type de base de données';
+COMMENT ON COLUMN "REF_TYPE_DB"."name_type_db"         IS 'Nom du type de base de données (MySQL, PostgreSQL, Oracle etc...)';
+COMMENT ON COLUMN "REF_TYPE_DB"."description_type_db"  IS 'Description du type de base de données';
+COMMENT ON COLUMN "REF_TYPE_DB"."deleted"              IS 'True si le type de base de données est supprimé';
+COMMENT ON COLUMN "REF_TYPE_DB"."creation_date"        IS 'Date de création de la ligne';
+COMMENT ON COLUMN "REF_TYPE_DB"."user_creation"        IS 'Utilisateur qui a créé la ligne';
+COMMENT ON COLUMN "REF_TYPE_DB"."modification_date"    IS 'Date de modification de la ligne';
+COMMENT ON COLUMN "REF_TYPE_DB"."user_modification"    IS 'Utilisateur qui a modifié la ligne';
+
+
+-- Table: DIM_DATABASE
+DROP TABLE IF EXISTS "DIM_DATABASE" CASCADE;
+CREATE TABLE "DIM_DATABASE" (
+  "id_db" BIGSERIAL Primary Key,
+  "name_db"               VARCHAR(120),
+  "id_type_db"            BIGINT,
+  "id_machine"            BIGINT,
+  "version_db"            VARCHAR(120),
+  "description_db"        TEXT,
+  "url_metrics_db"        VARCHAR(255),
+  "deleted"               BOOLEAN DEFAULT FALSE,
+  "creation_date"         TIMESTAMP,
+  "user_creation"         BIGINT,
+  "modification_date"     TIMESTAMP,
+  "user_modification"     BIGINT
+);
+
+-- Comments for DIM_DATABASE table columns
+COMMENT ON COLUMN "DIM_DATABASE"."id_db"               IS 'ID unique de la base de données';
+COMMENT ON COLUMN "DIM_DATABASE"."name_db"             IS 'Nom de la base de données';
+COMMENT ON COLUMN "DIM_DATABASE"."id_type_db"          IS 'ID du type de la base de données (MySQL, PostgreSQL, Oracle etc...)';
+COMMENT ON COLUMN "DIM_DATABASE"."id_machine"          IS 'ID de la machine qui héberge la base de données';
+COMMENT ON COLUMN "DIM_DATABASE"."version_db"          IS 'Version de la base de données (MySQL 8.0, PostgreSQL 15 etc...)';
+COMMENT ON COLUMN "DIM_DATABASE"."description_db"      IS 'Description de la base de données';
+COMMENT ON COLUMN "DIM_DATABASE"."url_metrics_db"      IS 'URL des métriques de la base de données (Ex: http://ip_machine:19999/api/v3/)';
+COMMENT ON COLUMN "DIM_DATABASE"."deleted"             IS 'True si la base de données est supprimée';
+COMMENT ON COLUMN "DIM_DATABASE"."creation_date"       IS 'Date de création de la ligne';
+COMMENT ON COLUMN "DIM_DATABASE"."user_creation"       IS 'Utilisateur qui a créé la ligne';
+COMMENT ON COLUMN "DIM_DATABASE"."modification_date"   IS 'Date de modification de la ligne';
+COMMENT ON COLUMN "DIM_DATABASE"."user_modification"   IS 'Utilisateur qui a modifié la ligne';
+
+
 
 -- Table: DIM_MACHINE
 DROP TABLE IF EXISTS "DIM_MACHINE" CASCADE;

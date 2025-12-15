@@ -14,6 +14,7 @@ import {
   TableCell
 } from '@tremor/react';
 import machineService from '../services/machineService';
+import dbService from '../services/dbService';
 import workerService from '../services/workerService';
 import verifService from '../services/verifService';
 
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [machineStats, setMachineStats] = useState({ total: 0, connected: 0 });
   const [testingConnections, setTestingConnections] = useState(false);
   const [workerCount, setWorkerCount] = useState(0);
+  const [dbCount, setDbCount] = useState(0);
   const [systemStats, setSystemStats] = useState({ total: 0, ok: 0, warn: 0, error: 0 });
   
 
@@ -31,18 +33,21 @@ export default function Dashboard() {
       setLoading(true);
       try {
         console.log('[Dashboard] Load start');
-        console.log('[Dashboard] Fetching machines & workers');
-        // Load machines & workers first to reduce chance of early 401 redirect
-        const [machines, workers] = await Promise.all([
+        console.log('[Dashboard] Fetching machines, databases & workers');
+        // Load machines, databases & workers first to reduce chance of early 401 redirect
+        const [machines, databases, workers] = await Promise.all([
           machineService.getAllMachines(),
+          dbService.getAllDatabases(),
           workerService.getAllWorkers(),
         ]);
         console.log('[Dashboard] Machines fetched:', Array.isArray(machines) ? machines.length : 'not array');
+        console.log('[Dashboard] Databases fetched:', Array.isArray(databases) ? databases.length : 'not array');
         console.log('[Dashboard] Workers fetched:', Array.isArray(workers) ? workers.length : 'not array');
         // Then attempt verifications (may return [] silently if unauthorized)
         const currentVerifs = await verifService.getCurrentVerifs();
         console.log('[Dashboard] Current verifications fetched:', Array.isArray(currentVerifs) ? currentVerifs.length : 'not array');
         const total = Array.isArray(machines) ? machines.length : 0;
+        setDbCount(Array.isArray(databases) ? databases.length : 0);
         setWorkerCount(Array.isArray(workers) ? workers.length : 0);
         // Derive system status counts from latest verifications
         if (Array.isArray(currentVerifs)) {
@@ -118,6 +123,12 @@ export default function Dashboard() {
         </Card>
 
         <Card>
+          <Title>Databases</Title>
+          <Metric className="mt-2">{dbCount}</Metric>
+          <Text className="mt-2 text-sm">Total registered databases</Text>
+        </Card>
+
+        <Card>
           <Title>Workers</Title>
           <Metric className="mt-2">{workerCount}</Metric>
           <Text className="mt-2 text-sm">Total registered workers</Text>
@@ -143,6 +154,19 @@ export default function Dashboard() {
           </div>
           <Link
             to="/dashboards/windows"
+            className="mt-4 inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded shadow"
+          >
+            Ouvrir le dashboard
+          </Link>
+        </Card>
+
+        <Card className="flex flex-col justify-between">
+          <div>
+            <Title>Dashboards des bases de données</Title>
+            <Text className="mt-2 text-sm">Visualiser les métriques des bases de données.</Text>
+          </div>
+          <Link
+            to="/dashboards/databases"
             className="mt-4 inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded shadow"
           >
             Ouvrir le dashboard
