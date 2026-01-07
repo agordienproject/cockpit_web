@@ -23,5 +23,6 @@ router.get("/:id", dbController.getDatabaseInfos);
 router.post("/", verifyRole, dbController.createDatabaseInfos);
 router.put("/:id", verifyRole, dbController.updateDatabaseInfos);
 router.delete("/:id", verifyRole, dbController.deleteDatabaseInfos);
+router.post("/test-connection", verifyRole, dbController.testDatabaseConnection);
 
 export default router;

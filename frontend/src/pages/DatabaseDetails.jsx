@@ -55,8 +55,8 @@ export default function DatabaseDetails() {
             <p className="text-gray-900">{database.description_db || '-'}</p>
           </div>
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700">Metrics URL</label>
-            <p className="text-gray-900 break-words">{database.url_metrics_db || '-'}</p>
+            <label className="block text-sm font-medium text-gray-700">Connection URL (masked)</label>
+            <p className="text-gray-900 break-words">{database.url_connection_db || '-'}</p>
           </div>
         </div>
       </div>

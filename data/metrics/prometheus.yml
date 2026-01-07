@@ -31,12 +31,10 @@ scrape_configs:
         target_label: machine
   # PostgreSQL metrics via postgres_exporter (multi-target support)
   - job_name: postgres
-    static_configs:
-      - targets:
-        - postgres_nap:5432
     metrics_path: /probe
-    params:
-      auth_module: [default]
+    http_sd_configs:
+      - url: http://host.docker.internal:3000/monitoring/prometheus/postgres-targets?token=SiNxmY03sbB-lkamcC5_tROjYH0B_oIbh089aBT4RvE
+        refresh_interval: 15s
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target

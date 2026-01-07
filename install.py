@@ -4,6 +4,7 @@ import getpass
 import subprocess
 import os
 import shutil
+import secrets
 from pathlib import Path
 
 
@@ -454,6 +455,34 @@ def write_env_file_from_template(template_path: Path, env_path: Path, replacemen
     print(f"✓ Wrote env file: {env_path}")
 
 
+def ensure_prometheus_sd_token(prometheus_config: Path, token: str):
+    """Inject the Prometheus SD token directly into prometheus.yml.
+
+    We do not rely on environment variable expansion inside Prometheus, so the
+    generated token is written as a literal in the HTTP SD URL.
+    """
+    if not prometheus_config.exists():
+        print(f"! prometheus.yml not found at {prometheus_config}, skipping PROMETHEUS_SD_TOKEN wiring")
+        return
+
+    content = prometheus_config.read_text(encoding="utf-8")
+    marker = "token="
+    if "postgres-targets?token=" not in content:
+        print("! Did not find postgres-targets?token= in prometheus.yml; leaving file unchanged")
+        return
+
+    # Replace any existing token=... on the postgres-targets URL by the new literal token
+    import re
+    pattern = r"(postgres-targets\?token=)[^\s]+"
+    repl = r"\1" + token
+    new_content, n = re.subn(pattern, repl, content)
+    if n == 0:
+        print("! No postgres-targets token pattern replaced in prometheus.yml")
+        return
+    prometheus_config.write_text(new_content, encoding="utf-8")
+    print(f"✓ Wired PROMETHEUS_SD_TOKEN directly into {prometheus_config}")
+
+
 def main():
     repo_root = Path(__file__).resolve().parent
     data_dir = repo_root / "data"
@@ -462,6 +491,7 @@ def main():
     prisma_generated_dir = backend_dir / "prisma" / "generated"
 
     compose_path = data_dir / "docker-compose.yaml"
+    prometheus_config = data_dir / "metrics" / "prometheus.yml"
     ddl_inspection_path = data_dir / "DDL_COCKPIT.sql"
 
     # Ask which installation to perform: complete (DB + WEB), web only, or db only.
@@ -607,6 +637,10 @@ def main():
         # 2) Update docker-compose
         update_docker_compose(compose_path, db_user, db_password, db_name, host_port, svc_name, volume_name)
 
+        # Ensure Prometheus has a shared SD token for secured HTTP SD endpoints
+        prom_sd_token = secrets.token_urlsafe(32)
+        ensure_prometheus_sd_token(prometheus_config, prom_sd_token)
+
         # Ensure monitoring volumes are declared
         ensure_monitoring_volumes(compose_path)
 
@@ -666,11 +700,16 @@ def main():
         backend_env = backend_dir / ".env"
         # Construct DB URL for backend
         db_url = f"postgresql://{db_user}:{db_password}@{ip_addr}:{host_port}/{db_name}?schema=public"
+        # If a Prometheus SD token was created during DB setup, reuse it; otherwise generate a new one
+        prom_sd_token_backend = locals().get("prom_sd_token") or secrets.token_urlsafe(32)
+        db_conn_secret = secrets.token_urlsafe(32)
         backend_replacements = {
             "GLOBAL_IP": backend_host,
             "DATABASE_URL_PSQL": db_url,
             "FRONTEND_URL": f"http://{frontend_host}:4000",
             "GRAFANA_INTERNAL_URL": f"http://{grafana_host}:{grafana_port}/grafana",
+            "PROMETHEUS_SD_TOKEN": prom_sd_token_backend,
+            "DB_CONN_SECRET": db_conn_secret,
         }
         write_env_file_from_template(backend_env_tmpl, backend_env, backend_replacements)
 

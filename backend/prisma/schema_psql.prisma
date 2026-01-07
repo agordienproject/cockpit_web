@@ -139,7 +139,7 @@ model DIM_DATABASE {
   id_machine        BigInt?
   version_db        String?   @db.VarChar(120)
   description_db    String?
-  url_metrics_db    String?   @db.VarChar(255)
+  url_connection_db String?   @db.VarChar(255)
   deleted           Boolean?  @default(false)
   creation_date     DateTime? @db.Timestamp(6)
   user_creation     BigInt?

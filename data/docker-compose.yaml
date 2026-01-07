@@ -39,7 +39,6 @@ services:
     - --config.file=/etc/postgres_exporter/postgres_exporter.yml
     depends_on:
     - postgres_nap
-
   mysql_exporter:
     image: prom/mysqld-exporter:latest
     container_name: mysql_exporter
@@ -52,7 +51,6 @@ services:
     - ./metrics/.my.cnf:/etc/mysql/.my.cnf:ro
     command:
     - --config.my-cnf=/etc/mysql/.my.cnf
-
   mssql_exporter:
     image: awaragi/prometheus-mssql-exporter:latest
     container_name: mssql_exporter
@@ -60,11 +58,10 @@ services:
     ports:
     - 4860:4860
     environment:
-      SERVER: "host.docker.internal"
-      PORT: "1433"
-      USERNAME: "sa"
-      PASSWORD: "YourPassword123!"
-
+      SERVER: host.docker.internal
+      PORT: '1433'
+      USERNAME: sa
+      PASSWORD: YourPassword123!
   grafana:
     image: grafana/grafana:latest
     container_name: grafana

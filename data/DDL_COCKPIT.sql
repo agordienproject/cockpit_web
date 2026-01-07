@@ -147,7 +147,7 @@ CREATE TABLE "DIM_DATABASE" (
   "id_machine"            BIGINT,
   "version_db"            VARCHAR(120),
   "description_db"        TEXT,
-  "url_metrics_db"        VARCHAR(255),
+  "url_connection_db"     VARCHAR(255),
   "deleted"               BOOLEAN DEFAULT FALSE,
   "creation_date"         TIMESTAMP,
   "user_creation"         BIGINT,
@@ -162,7 +162,7 @@ COMMENT ON COLUMN "DIM_DATABASE"."id_type_db"          IS 'ID du type de la base
 COMMENT ON COLUMN "DIM_DATABASE"."id_machine"          IS 'ID de la machine qui héberge la base de données';
 COMMENT ON COLUMN "DIM_DATABASE"."version_db"          IS 'Version de la base de données (MySQL 8.0, PostgreSQL 15 etc...)';
 COMMENT ON COLUMN "DIM_DATABASE"."description_db"      IS 'Description de la base de données';
-COMMENT ON COLUMN "DIM_DATABASE"."url_metrics_db"      IS 'URL des métriques de la base de données (Ex: http://ip_machine:19999/api/v3/)';
+COMMENT ON COLUMN "DIM_DATABASE"."url_connection_db"   IS 'Chaîne de connexion chiffrée de la base de données (DSN de connexion)';
 COMMENT ON COLUMN "DIM_DATABASE"."deleted"             IS 'True si la base de données est supprimée';
 COMMENT ON COLUMN "DIM_DATABASE"."creation_date"       IS 'Date de création de la ligne';
 COMMENT ON COLUMN "DIM_DATABASE"."user_creation"       IS 'Utilisateur qui a créé la ligne';

@@ -170,3 +170,20 @@ export const activateRefDatabaseTypeInfos = async (req: Request, res: Response) 
         res.status(500).json({ error: error.message });
     }
 };
+
+export const testDatabaseConnection = async (req: Request, res: Response) => {
+    try {
+        const body = req.body as any;
+        const dsn: string | undefined = body?.url_connection_db;
+        if (!dsn) {
+            return res.status(400).json({ ok: false, error: "Missing url_connection_db" });
+        }
+        info('database.testDatabaseConnection - start', { user: req.user?.id });
+        await dbService.testConnectionString(dsn);
+        info('database.testDatabaseConnection - success');
+        res.status(200).json({ ok: true });
+    } catch (error: any) {
+        logError('database.testDatabaseConnection - error', { error: error?.message || error });
+        res.status(200).json({ ok: false, error: error?.message || 'Connection failed' });
+    }
+};

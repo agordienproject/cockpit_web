@@ -1,4 +1,6 @@
 import { prismaPSQL } from "../prisma/client_psql";
+import { decryptConnection, encryptConnection, isMaskedConnection, maskConnection } from "../utils/crypto";
+import { Client } from "pg";
 
 // Databases
 export const getAllDatabases = async () => {
@@ -20,7 +22,18 @@ export const getAllDatabases = async () => {
   
   return rows.map(r => {
     const idType = (r as any).id_type_db;
-    return { ...r, name_type_db: idType ? dbTypeMap[String(idType)] : undefined };
+    const typeName = idType ? dbTypeMap[String(idType)] : undefined;
+    const { url_connection_db, ...rest } = r as any;
+    let maskedConn: string | undefined;
+    try {
+      if (url_connection_db) {
+        const plain = decryptConnection(String(url_connection_db));
+        maskedConn = maskConnection(plain);
+      }
+    } catch {
+      maskedConn = undefined;
+    }
+    return { ...rest, name_type_db: typeName, url_connection_db: maskedConn };
   });
 };
 
@@ -38,13 +51,29 @@ export const getDatabaseById = async (id: any) => {
     });
     typeName = typeRef?.name_type_db;
   }
-  return { ...(db as any), name_type_db: typeName } as any;
+  const rawEnc: any = (db as any).url_connection_db;
+  let maskedConn: string | undefined;
+  try {
+    if (rawEnc) {
+      const plain = decryptConnection(String(rawEnc));
+      maskedConn = maskConnection(plain);
+    }
+  } catch {
+    maskedConn = undefined;
+  }
+  const { url_connection_db, ...rest } = db as any;
+  return { ...rest, name_type_db: typeName, url_connection_db: maskedConn } as any;
 };
 
 export const createDatabase = async (data: any, userId: any) => {
   const typeId = data.id_type_db ? Number(data.id_type_db) : undefined;
   const machineId = data.id_machine ? Number(data.id_machine) : undefined;
   
+  let encryptedConn: string | undefined;
+  if (data.url_connection_db) {
+    encryptedConn = encryptConnection(String(data.url_connection_db));
+  }
+
   const created = await prismaPSQL.dIM_DATABASE.create({
     data: {
       name_db: data.name_db,
@@ -52,7 +81,7 @@ export const createDatabase = async (data: any, userId: any) => {
       id_machine: machineId,
       version_db: data.version_db,
       description_db: data.description_db,
-      url_metrics_db: data.url_metrics_db,
+      url_connection_db: encryptedConn,
       creation_date: new Date(),
       user_creation: userId ? parseInt(userId) : undefined,
       modification_date: new Date(),
@@ -68,27 +97,47 @@ export const createDatabase = async (data: any, userId: any) => {
     });
     typeName = typeRef?.name_type_db;
   }
-  return { ...(created as any), name_type_db: typeName } as any;
+
+  let maskedConn: string | undefined;
+  try {
+    if (encryptedConn) {
+      const plain = decryptConnection(encryptedConn);
+      maskedConn = maskConnection(plain);
+    }
+  } catch {
+    maskedConn = undefined;
+  }
+
+  const { url_connection_db, ...rest } = created as any;
+  return { ...rest, name_type_db: typeName, url_connection_db: maskedConn } as any;
 };
 
 export const updateDatabase = async (id: any, data: any, userId: any) => {
   const typeId = data.id_type_db ? Number(data.id_type_db) : undefined;
   const machineId = data.id_machine ? Number(data.id_machine) : undefined;
-  
+
+  const updateData: any = {
+    name_db: data.name_db,
+    id_type_db: typeId,
+    id_machine: machineId,
+    version_db: data.version_db,
+    description_db: data.description_db,
+    modification_date: new Date(),
+    user_modification: userId ? parseInt(userId) : undefined,
+  };
+
+  if (typeof data.url_connection_db === "string") {
+    const trimmed = data.url_connection_db.trim();
+    if (trimmed && !isMaskedConnection(trimmed)) {
+      updateData.url_connection_db = encryptConnection(trimmed);
+    }
+  }
+
   const updated = await prismaPSQL.dIM_DATABASE.update({
     where: { id_db: id },
-    data: {
-      name_db: data.name_db,
-      id_type_db: typeId,
-      id_machine: machineId,
-      version_db: data.version_db,
-      description_db: data.description_db,
-      url_metrics_db: data.url_metrics_db,
-      modification_date: new Date(),
-      user_modification: userId ? parseInt(userId) : undefined,
-    } as any,
+    data: updateData,
   });
-  
+
   let typeName: string | undefined;
   const idType: any = (updated as any).id_type_db;
   if (idType) {
@@ -97,7 +146,20 @@ export const updateDatabase = async (id: any, data: any, userId: any) => {
     });
     typeName = typeRef?.name_type_db;
   }
-  return { ...(updated as any), name_type_db: typeName } as any;
+
+  const rawEnc: any = (updated as any).url_connection_db;
+  let maskedConn: string | undefined;
+  try {
+    if (rawEnc) {
+      const plain = decryptConnection(String(rawEnc));
+      maskedConn = maskConnection(plain);
+    }
+  } catch {
+    maskedConn = undefined;
+  }
+
+  const { url_connection_db, ...rest } = updated as any;
+  return { ...rest, name_type_db: typeName, url_connection_db: maskedConn } as any;
 };
 
 export const deleteDatabase = async (id: any, userId: any) => {
@@ -181,4 +243,15 @@ const convertBigIntToString = (obj: any) => {
   return JSON.parse(JSON.stringify(obj, (_, value) =>
     typeof value === "bigint" ? value.toString() : value
   ));
+};
+
+export const testConnectionString = async (plainDsn: string) => {
+  const client = new Client({ connectionString: plainDsn });
+  try {
+    await client.connect();
+    await client.query("SELECT 1");
+    return { ok: true };
+  } finally {
+    await client.end().catch(() => undefined);
+  }
 };

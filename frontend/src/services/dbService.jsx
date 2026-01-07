@@ -40,6 +40,11 @@ export const testDatabaseById = async (id) => {
   return resp.data;
 };
 
+export const testDatabaseConnection = async (url_connection_db) => {
+  const resp = await api.post('/databases/test-connection', { url_connection_db });
+  return resp.data;
+};
+
 export const testExporterUrl = async (url) => {
   const params = new URLSearchParams({ url });
   console.log('Testing DB URL:', url);
@@ -71,6 +76,7 @@ export default {
   updateDatabase,
   deleteDatabase,
   testDatabaseById,
+  testDatabaseConnection,
   testExporterUrl,
   getAllRefDatabases,
 };

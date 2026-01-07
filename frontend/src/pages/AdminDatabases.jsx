@@ -30,8 +30,13 @@ export default function AdminDatabases() {
     id_machine: '', 
     version_db: '', 
     description_db: '', 
-    url_metrics_db: '' 
+    url_connection_db: '' 
   });
+  const [newHost, setNewHost] = useState('');
+  const [newPort, setNewPort] = useState('5432');
+  const [newUser, setNewUser] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newDbName, setNewDbName] = useState('');
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -55,14 +60,46 @@ export default function AdminDatabases() {
     setSaving(true);
     setError(null);
     try {
-      const created = await dbService.createDatabase(newItem);
+      let conn = '';
+      if (newHost && newPort && newUser && newPassword && newDbName) {
+        conn = `postgresql://${encodeURIComponent(newUser)}:${encodeURIComponent(newPassword)}@${newHost}:${newPort}/${newDbName}`;
+      }
+      const payload = { ...newItem, url_connection_db: conn || undefined };
+      const created = await dbService.createDatabase(payload);
       setDatabases([...databases, created]);
       setShowAdd(false);
-      setNewItem({ name_db: '', id_type_db: '', id_machine: '', version_db: '', description_db: '', url_metrics_db: '' });
+      setNewItem({ name_db: '', id_type_db: '', id_machine: '', version_db: '', description_db: '', url_connection_db: '' });
+      setNewHost('');
+      setNewPort('5432');
+      setNewUser('');
+      setNewPassword('');
+      setNewDbName('');
     } catch (err) {
       setError(err.message || 'Failed to add database');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTestNewConnection = async () => {
+    setError(null);
+    try {
+      let conn = '';
+      if (newHost && newPort && newUser && newPassword && newDbName) {
+        conn = `postgresql://${encodeURIComponent(newUser)}:${encodeURIComponent(newPassword)}@${newHost}:${newPort}/${newDbName}`;
+      }
+      if (!conn) {
+        setError('Please fill host, port, database, user and password before testing');
+        return;
+      }
+      const resp = await dbService.testDatabaseConnection(conn);
+      if (!resp?.ok) {
+        setError(resp?.error || 'Connection test failed');
+      } else {
+        alert('Connection OK');
+      }
+    } catch (e) {
+      setError(e.message || 'Connection test failed');
     }
   };
 
@@ -149,8 +186,24 @@ export default function AdminDatabases() {
               <TextInput value={newItem.version_db} onChange={e => setNewItem({ ...newItem, version_db: e.target.value })} disabled={saving} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Metrics URL</label>
-              <TextInput value={newItem.url_metrics_db} onChange={e => setNewItem({ ...newItem, url_metrics_db: e.target.value })} disabled={saving} />
+              <label className="block text-sm font-medium text-gray-700">Host</label>
+              <TextInput value={newHost} onChange={e => setNewHost(e.target.value)} disabled={saving} placeholder="db-host.example.com" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Port</label>
+              <TextInput value={newPort} onChange={e => setNewPort(e.target.value)} disabled={saving} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Main database</label>
+              <TextInput value={newDbName} onChange={e => setNewDbName(e.target.value)} disabled={saving} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">User</label>
+              <TextInput value={newUser} onChange={e => setNewUser(e.target.value)} disabled={saving} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <TextInput type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} disabled={saving} />
             </div>
             <div className="col-span-full">
               <label className="block text-sm font-medium text-gray-700">Description</label>
@@ -158,7 +211,22 @@ export default function AdminDatabases() {
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="secondary" onClick={() => { setShowAdd(false); setNewItem({ name_db: '', id_type_db: '', id_machine: '', version_db: '', description_db: '', url_metrics_db: '' }); }} disabled={saving}>Cancel</Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowAdd(false);
+                setNewItem({ name_db: '', id_type_db: '', id_machine: '', version_db: '', description_db: '', url_connection_db: '' });
+                setNewHost('');
+                setNewPort('5432');
+                setNewUser('');
+                setNewPassword('');
+                setNewDbName('');
+              }}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button variant="secondary" onClick={handleTestNewConnection} disabled={saving}>Test connection</Button>
             <Button onClick={handleAdd} disabled={saving}>{saving ? 'Adding...' : 'Add'}</Button>
           </div>
         </Card>
@@ -171,7 +239,7 @@ export default function AdminDatabases() {
               <TableHeaderCell>Name</TableHeaderCell>
               <TableHeaderCell>Type</TableHeaderCell>
               <TableHeaderCell>Version</TableHeaderCell>
-              <TableHeaderCell>Metrics URL</TableHeaderCell>
+              <TableHeaderCell>Connection URL</TableHeaderCell>
               <TableHeaderCell>Description</TableHeaderCell>
               <TableHeaderCell>Status</TableHeaderCell>
               <TableHeaderCell>Actions</TableHeaderCell>
@@ -213,7 +281,7 @@ export default function AdminDatabases() {
                     )}
                   </TableCell>
                   <TableCell>{editing?.id_db === db.id_db ? (<TextInput value={editing.version_db || ''} onChange={e => setEditing({ ...editing, version_db: e.target.value })} />) : (db.version_db || '-')}</TableCell>
-                  <TableCell>{editing?.id_db === db.id_db ? (<TextInput value={editing.url_metrics_db || ''} onChange={e => setEditing({ ...editing, url_metrics_db: e.target.value })} />) : (db.url_metrics_db || '-')}</TableCell>
+                  <TableCell>{editing?.id_db === db.id_db ? (<TextInput value={editing.url_connection_db || ''} onChange={e => setEditing({ ...editing, url_connection_db: e.target.value })} />) : (db.url_connection_db || '-')}</TableCell>
                   <TableCell>{editing?.id_db === db.id_db ? (<TextInput value={editing.description_db || ''} onChange={e => setEditing({ ...editing, description_db: e.target.value })} />) : (db.description_db || '-')}</TableCell>
                   <TableCell>{db.deleted ? 'deleted' : 'active'}</TableCell>
                   <TableCell>
