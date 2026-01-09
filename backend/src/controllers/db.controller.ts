@@ -2,6 +2,12 @@ import { Request, Response } from "express";
 import * as dbService from "../services/db.service";
 import { info, error as logError } from "../utils/logger";
 
+const redactConnectionForLog = (connection: any) => {
+    if (!connection) return undefined;
+    const { password, ...rest } = connection;
+    return { ...rest, password: password ? "***" : undefined };
+};
+
 const convertBigIntToString = (obj: any) => {
     return JSON.parse(JSON.stringify(obj, (_, value) =>
         typeof value === "bigint" ? value.toString() : value
@@ -37,7 +43,8 @@ export const createDatabaseInfos = async (req: Request, res: Response) => {
     try {
         const data = req.body;
         const user_id = req.user?.id;
-        info('database.createDatabaseInfos - start', { body: data, user: user_id });
+        const { connection, ...rest } = data || {};
+        info('database.createDatabaseInfos - start', { body: { ...rest, connection: redactConnectionForLog(connection) }, user: user_id });
         const resp = await dbService.createDatabase(data, user_id);
         info('database.createDatabaseInfos - success', { id: (resp as any)?.id_db });
         res.status(201).json(convertBigIntToString(resp));
@@ -52,7 +59,8 @@ export const updateDatabaseInfos = async (req: Request, res: Response) => {
         const id = req.params.id;
         const data = req.body;
         const user_id = req.user?.id;
-        info('database.updateDatabaseInfos - start', { id, body: data, user: user_id });
+        const { connection, ...rest } = data || {};
+        info('database.updateDatabaseInfos - start', { id, body: { ...rest, connection: redactConnectionForLog(connection) }, user: user_id });
         const resp = await dbService.updateDatabase(id, data, user_id);
         info('database.updateDatabaseInfos - success', { id });
         res.status(200).json(convertBigIntToString(resp));
@@ -174,12 +182,15 @@ export const activateRefDatabaseTypeInfos = async (req: Request, res: Response) 
 export const testDatabaseConnection = async (req: Request, res: Response) => {
     try {
         const body = req.body as any;
-        const dsn: string | undefined = body?.url_connection_db;
-        if (!dsn) {
-            return res.status(400).json({ ok: false, error: "Missing url_connection_db" });
+        const connection = body?.connection;
+        if (!connection) {
+            return res.status(400).json({ ok: false, error: "Missing connection" });
+        }
+        if (!connection.host || !connection.user || !connection.password) {
+            return res.status(400).json({ ok: false, error: "Host, user and password are required" });
         }
         info('database.testDatabaseConnection - start', { user: req.user?.id });
-        await dbService.testConnectionString(dsn);
+        await dbService.testConnection(connection);
         info('database.testDatabaseConnection - success');
         res.status(200).json({ ok: true });
     } catch (error: any) {

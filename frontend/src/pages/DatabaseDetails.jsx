@@ -54,9 +54,25 @@ export default function DatabaseDetails() {
             <label className="block text-sm font-medium text-gray-700">Description</label>
             <p className="text-gray-900">{database.description_db || '-'}</p>
           </div>
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700">Connection URL (masked)</label>
-            <p className="text-gray-900 break-words">{database.url_connection_db || '-'}</p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Host</label>
+            <p className="text-gray-900">{database.connection?.host || '-'}</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Port</label>
+            <p className="text-gray-900">{database.connection?.port || '-'}</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Database</label>
+            <p className="text-gray-900">{database.connection?.database || '-'}</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">User</label>
+            <p className="text-gray-900">{database.connection?.user || '-'}</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <p className="text-gray-900">{database.connection?.hasPassword ? 'Stored (hidden)' : '-'}</p>
           </div>
         </div>
       </div>

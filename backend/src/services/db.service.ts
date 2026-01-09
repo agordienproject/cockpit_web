@@ -1,6 +1,71 @@
 import { prismaPSQL } from "../prisma/client_psql";
-import { decryptConnection, encryptConnection, isMaskedConnection, maskConnection } from "../utils/crypto";
+import {
+  decryptConnection,
+  encryptConnection,
+  parsePostgresConnection,
+  buildPostgresConnection,
+  PostgresConnectionParts,
+} from "../utils/crypto";
 import { Client } from "pg";
+
+const extractConnectionParts = (encrypted: any): PostgresConnectionParts | undefined => {
+  if (!encrypted) return undefined;
+  try {
+    const plain = decryptConnection(String(encrypted));
+    return parsePostgresConnection(plain);
+  } catch {
+    return undefined;
+  }
+};
+
+const serialiseConnectionParts = (parts: PostgresConnectionParts | undefined) => {
+  if (!parts) return undefined;
+  return {
+    host: parts.host,
+    port: parts.port,
+    database: parts.database,
+    user: parts.user,
+    hasPassword: Boolean(parts.password),
+  };
+};
+
+const sanitizeConnectionInput = (input: any): PostgresConnectionParts => {
+  const host = typeof input?.host === "string" ? input.host.trim() : "";
+  const user = typeof input?.user === "string" ? input.user.trim() : "";
+  const portValue = input?.port;
+  const port = typeof portValue === "number"
+    ? String(portValue)
+    : typeof portValue === "string"
+      ? portValue.trim()
+      : undefined;
+  const database = typeof input?.database === "string" && input.database.trim()
+    ? input.database.trim()
+    : undefined;
+  const password = typeof input?.password === "string" && input.password.trim()
+    ? input.password.trim()
+    : undefined;
+  return {
+    host,
+    port: port || undefined,
+    database,
+    user,
+    password,
+  };
+};
+
+const applyDefaultQueryParams = (dsn: string): string => {
+  try {
+    const url = new URL(dsn);
+    const params = url.searchParams;
+    if (!params.has("sslmode")) {
+      params.set("sslmode", "disable");
+    }
+    url.search = params.toString() ? `?${params.toString()}` : "";
+    return url.toString();
+  } catch {
+    return dsn.includes("?") ? `${dsn}&sslmode=disable` : `${dsn}?sslmode=disable`;
+  }
+};
 
 // Databases
 export const getAllDatabases = async () => {
@@ -24,16 +89,12 @@ export const getAllDatabases = async () => {
     const idType = (r as any).id_type_db;
     const typeName = idType ? dbTypeMap[String(idType)] : undefined;
     const { url_connection_db, ...rest } = r as any;
-    let maskedConn: string | undefined;
-    try {
-      if (url_connection_db) {
-        const plain = decryptConnection(String(url_connection_db));
-        maskedConn = maskConnection(plain);
-      }
-    } catch {
-      maskedConn = undefined;
-    }
-    return { ...rest, name_type_db: typeName, url_connection_db: maskedConn };
+    const parts = extractConnectionParts(url_connection_db);
+    return {
+      ...rest,
+      name_type_db: typeName,
+      connection: serialiseConnectionParts(parts),
+    };
   });
 };
 
@@ -52,27 +113,24 @@ export const getDatabaseById = async (id: any) => {
     typeName = typeRef?.name_type_db;
   }
   const rawEnc: any = (db as any).url_connection_db;
-  let maskedConn: string | undefined;
-  try {
-    if (rawEnc) {
-      const plain = decryptConnection(String(rawEnc));
-      maskedConn = maskConnection(plain);
-    }
-  } catch {
-    maskedConn = undefined;
-  }
+  const parts = extractConnectionParts(rawEnc);
   const { url_connection_db, ...rest } = db as any;
-  return { ...rest, name_type_db: typeName, url_connection_db: maskedConn } as any;
+  return { ...rest, name_type_db: typeName, connection: serialiseConnectionParts(parts) } as any;
 };
 
 export const createDatabase = async (data: any, userId: any) => {
   const typeId = data.id_type_db ? Number(data.id_type_db) : undefined;
   const machineId = data.id_machine ? Number(data.id_machine) : undefined;
-  
-  let encryptedConn: string | undefined;
-  if (data.url_connection_db) {
-    encryptedConn = encryptConnection(String(data.url_connection_db));
+
+  if (!data.connection) {
+    throw new Error("Connection payload is required");
   }
+  const connection = sanitizeConnectionInput(data.connection);
+  if (!connection.host || !connection.user || !connection.password) {
+    throw new Error("Connection host, user and password are required");
+  }
+  const connectionString = applyDefaultQueryParams(buildPostgresConnection(connection));
+  const encryptedConn = encryptConnection(connectionString);
 
   const created = await prismaPSQL.dIM_DATABASE.create({
     data: {
@@ -98,21 +156,17 @@ export const createDatabase = async (data: any, userId: any) => {
     typeName = typeRef?.name_type_db;
   }
 
-  let maskedConn: string | undefined;
-  try {
-    if (encryptedConn) {
-      const plain = decryptConnection(encryptedConn);
-      maskedConn = maskConnection(plain);
-    }
-  } catch {
-    maskedConn = undefined;
-  }
+  const parts = extractConnectionParts((created as any).url_connection_db);
 
   const { url_connection_db, ...rest } = created as any;
-  return { ...rest, name_type_db: typeName, url_connection_db: maskedConn } as any;
+  return { ...rest, name_type_db: typeName, connection: serialiseConnectionParts(parts) } as any;
 };
 
 export const updateDatabase = async (id: any, data: any, userId: any) => {
+  const current = await prismaPSQL.dIM_DATABASE.findFirst({ where: { id_db: id, deleted: false } });
+  if (!current) throw new Error("Database not found");
+  const existingParts = extractConnectionParts((current as any).url_connection_db);
+
   const typeId = data.id_type_db ? Number(data.id_type_db) : undefined;
   const machineId = data.id_machine ? Number(data.id_machine) : undefined;
 
@@ -126,11 +180,30 @@ export const updateDatabase = async (id: any, data: any, userId: any) => {
     user_modification: userId ? parseInt(userId) : undefined,
   };
 
-  if (typeof data.url_connection_db === "string") {
-    const trimmed = data.url_connection_db.trim();
-    if (trimmed && !isMaskedConnection(trimmed)) {
-      updateData.url_connection_db = encryptConnection(trimmed);
+  if (data.connection) {
+    const rawConnection = data.connection as PostgresConnectionParts & { passwordChanged?: boolean };
+    const passwordChanged = Boolean(rawConnection.passwordChanged);
+    const sanitized = sanitizeConnectionInput(rawConnection);
+    const password = passwordChanged ? sanitized.password : existingParts?.password;
+
+    if (!password) {
+      throw new Error("Existing password missing; please provide a new one");
     }
+
+    const toBuild: PostgresConnectionParts = {
+      host: sanitized.host || existingParts?.host || "",
+      port: sanitized.port || existingParts?.port,
+      database: sanitized.database || existingParts?.database,
+      user: sanitized.user || existingParts?.user || "",
+      password,
+    };
+
+    if (!toBuild.host || !toBuild.user) {
+      throw new Error("Connection host and user are required");
+    }
+
+    const built = applyDefaultQueryParams(buildPostgresConnection(toBuild));
+    updateData.url_connection_db = encryptConnection(built);
   }
 
   const updated = await prismaPSQL.dIM_DATABASE.update({
@@ -148,18 +221,10 @@ export const updateDatabase = async (id: any, data: any, userId: any) => {
   }
 
   const rawEnc: any = (updated as any).url_connection_db;
-  let maskedConn: string | undefined;
-  try {
-    if (rawEnc) {
-      const plain = decryptConnection(String(rawEnc));
-      maskedConn = maskConnection(plain);
-    }
-  } catch {
-    maskedConn = undefined;
-  }
+  const parts = extractConnectionParts(rawEnc);
 
   const { url_connection_db, ...rest } = updated as any;
-  return { ...rest, name_type_db: typeName, url_connection_db: maskedConn } as any;
+  return { ...rest, name_type_db: typeName, connection: serialiseConnectionParts(parts) } as any;
 };
 
 export const deleteDatabase = async (id: any, userId: any) => {
@@ -245,7 +310,12 @@ const convertBigIntToString = (obj: any) => {
   ));
 };
 
-export const testConnectionString = async (plainDsn: string) => {
+export const testConnection = async (connection: PostgresConnectionParts) => {
+  const sanitized = sanitizeConnectionInput(connection);
+  if (!sanitized.password) {
+    throw new Error("Password is required for connection test");
+  }
+  const plainDsn = applyDefaultQueryParams(buildPostgresConnection(sanitized));
   const client = new Client({ connectionString: plainDsn });
   try {
     await client.connect();
