@@ -1,6 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { info } from '../utils/logger';
+import { prismaPSQL } from '../prisma/client_psql';
+import { decryptConnection } from '../utils/crypto';
+import { info, error as logError } from '../utils/logger';
 
 const targetsDir = process.env.METRICS_TARGETS_DIR || path.resolve(__dirname, '../../../data/metrics/targets');
 const WINDOWS_FILE = process.env.WINDOWS_TARGETS_FILE || 'windows_exporter.json';
@@ -51,11 +53,94 @@ export const addFileSdTarget = async (os: string, address: string, labels?: Reco
         }
         return g;
     });
+
     if (!found) {
-        updated.push({ targets: [normalized], labels: labels || {} });
+        updated.push({
+            targets: [normalized],
+            labels: labels
+        });
     }
+
     await atomicWrite(fullPath, JSON.stringify(updated, null, 2));
-    return { ok: true, file: fullPath };
+};
+
+// --- Database & Machine HTTP SD Services ---
+
+export const getMachineTargets = async () => {
+    const machines: any[] = await prismaPSQL.dIM_MACHINE.findMany({ where: { deleted: false } });
+    const osIds = [...new Set(machines.map(m => (m as any).id_os_machine).filter(Boolean))];
+    const osMap: Record<string, string> = {};
+    
+    if (osIds.length) {
+        const osRefs: any[] = await prismaPSQL.rEF_OS_MACHINE.findMany({ where: { id_os_machine: { in: osIds as any }, deleted: false } as any });
+        osRefs.forEach(r => { osMap[String(r.id_os_machine)] = r.name_os_machine || ''; });
+    }
+
+    return machines
+        .filter((m) => !!m.url_metrics_machine)
+        .map((m) => {
+            const idOs = (m as any).id_os_machine;
+            const osName = idOs ? osMap[String(idOs)] || '' : '';
+            return {
+                targets: [String(m.url_metrics_machine)],
+                labels: {
+                    instance: String(m.url_metrics_machine),
+                    machine: String(m.name_machine || m.id_machine),
+                    hostname: String(m.name_machine || m.id_machine),
+                    os: (osName ? osName.toLowerCase() : ''),
+                },
+            };
+        });
+};
+
+const getDbTargets = async (typeRegex: RegExp, typeLabel: string) => {
+    const dbs: any[] = await prismaPSQL.dIM_DATABASE.findMany({ where: { deleted: false } });
+    const typeIds = [...new Set(dbs.map(d => (d as any).id_type_db).filter(Boolean))];
+    const typeMap: Record<string, string> = {};
+
+    if (typeIds.length) {
+        const refs: any[] = await prismaPSQL.rEF_TYPE_DB.findMany({ where: { id_type_db: { in: typeIds as any }, deleted: false } as any });
+        refs.forEach(r => { typeMap[String(r.id_type_db)] = r.name_type_db || ''; });
+    }
+
+    return dbs
+        .map((d) => {
+            const idType: any = (d as any).id_type_db;
+            const typeName = idType ? typeMap[String(idType)] || '' : '';
+            if (!typeName || !typeRegex.test(typeName)) return null;
+            
+            const enc = (d as any).url_connection_db as string | null;
+            if (!enc) return null;
+            
+            try {
+                const dsn = decryptConnection(enc);
+                const name = String((d as any).name_db || (d as any).id_db);
+                return {
+                    targets: [dsn],
+                    labels: {
+                        instance: name,
+                        db_name: name,
+                        db_type: typeLabel,
+                    },
+                };
+            } catch (e: any) {
+                logError(`monitoring.getDbTargets(${typeLabel}) - decrypt error`, { id_db: (d as any).id_db, error: e?.message || e });
+                return null;
+            }
+        })
+        .filter(Boolean);
+};
+
+export const getPostgresTargets = async () => {
+    return getDbTargets(/^postgres/i, 'postgres');
+};
+
+export const getMssqlTargets = async () => {
+    return getDbTargets(/^(mssql|sql server|sql_server)/i, 'mssql');
+};
+
+export const getMysqlTargets = async () => {
+    return getDbTargets(/^mysql|maria/i, 'mysql');
 };
 
 export const testExporterUrl = async (url: string) => {

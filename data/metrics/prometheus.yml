@@ -22,7 +22,7 @@ scrape_configs:
   - job_name: cockpit_machines
     metrics_path: /metrics
     http_sd_configs:
-      - url: http://host.docker.internal:3000/monitoring/prometheus/targets
+      - url: http://host.docker.internal:3000/monitoring/prometheus/machine-targets?token=QhetYEjjndvdpxLM9XX0xmsLMSHL7zKqxx-tbPFYu-c
         refresh_interval: 15s
     relabel_configs:
       - source_labels: [__address__]
