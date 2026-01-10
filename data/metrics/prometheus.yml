@@ -33,7 +33,7 @@ scrape_configs:
   - job_name: postgres
     metrics_path: /probe
     http_sd_configs:
-      - url: http://host.docker.internal:3000/monitoring/prometheus/postgres-targets?token=SiNxmY03sbB-lkamcC5_tROjYH0B_oIbh089aBT4RvE
+      - url: http://host.docker.internal:3000/monitoring/prometheus/postgres-targets?token=QhetYEjjndvdpxLM9XX0xmsLMSHL7zKqxx-tbPFYu-c
         refresh_interval: 15s
     relabel_configs:
       - source_labels: [__address__]
