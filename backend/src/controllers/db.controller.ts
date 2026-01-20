@@ -183,14 +183,17 @@ export const testDatabaseConnection = async (req: Request, res: Response) => {
     try {
         const body = req.body as any;
         const connection = body?.connection;
+        const typeId = body?.id_type_db;
+        console.log("Received test connection request for typeId:", typeId, "with connection:", redactConnectionForLog(connection));
+
         if (!connection) {
             return res.status(400).json({ ok: false, error: "Missing connection" });
         }
         if (!connection.host || !connection.user || !connection.password) {
             return res.status(400).json({ ok: false, error: "Host, user and password are required" });
         }
-        info('database.testDatabaseConnection - start', { user: req.user?.id });
-        await dbService.testConnection(connection);
+        info('database.testDatabaseConnection - start', { user: req.user?.id, typeId });
+        await dbService.testConnection(connection, typeId);
         info('database.testDatabaseConnection - success');
         res.status(200).json({ ok: true });
     } catch (error: any) {

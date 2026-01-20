@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Databases
+  postgres_ex_1:
+    image: postgres:15
+    container_name: postgres_ex_1
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: example_db_1
+    ports:
+      - "5433:5432"
+    networks:
+      - monitoring
+
+  postgres_ex_2:
+    image: postgres:15
+    container_name: postgres_ex_2
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: example_db_2
+    ports:
+      - "5434:5432"
+    networks:
+      - monitoring
+
+  # MSSQL Databases
+  mssql_ex_1:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql_ex_1
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Password123!"
+      MSSQL_PID: "Express"
+    ports:
+      - "1433:1433"
+    networks:
+      - monitoring
+
+  mssql_ex_2:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql_ex_2
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Password123!"
+      MSSQL_PID: "Express"
+    ports:
+      - "1434:1433"
+    networks:
+      - monitoring
+
+  # MySQL Databases
+  mysql_ex_1:
+    image: mysql:8.0
+    container_name: mysql_ex_1
+    environment:
+      MYSQL_ROOT_PASSWORD: password123
+      MYSQL_DATABASE: example_db_1
+    ports:
+      - "3306:3306"
+    networks:
+      - monitoring
+
+  mysql_ex_2:
+    image: mysql:8.0
+    container_name: mysql_ex_2
+    environment:
+      MYSQL_ROOT_PASSWORD: password123
+      MYSQL_DATABASE: example_db_2
+    ports:
+      - "3307:3306"
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    driver: bridge

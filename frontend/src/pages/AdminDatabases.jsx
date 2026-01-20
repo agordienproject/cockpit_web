@@ -136,13 +136,13 @@ export default function AdminDatabases() {
     }
   };
 
-  const handleTestConnection = async (connection, requirePassword = true) => {
+  const handleTestConnection = async (connection, requirePassword = true, typeId = null) => {
     setError(null);
     if (!validateConnection(connection, requirePassword)) {
       return;
     }
     try {
-      const resp = await dbService.testDatabaseConnection(buildConnectionPayload(connection, true));
+      const resp = await dbService.testDatabaseConnection(buildConnectionPayload(connection, true), typeId);
       if (!resp?.ok) {
         setError(resp?.error || 'Connection test failed');
       } else {
@@ -218,7 +218,7 @@ export default function AdminDatabases() {
       setError('Enter password to test the connection');
       return;
     }
-    handleTestConnection(editConnection, true);
+    handleTestConnection(editConnection, true, editing.id_type_db);
   };
 
   const handleDelete = async (db) => {
@@ -315,7 +315,7 @@ export default function AdminDatabases() {
             >
               Cancel
             </Button>
-            <Button variant="secondary" onClick={() => handleTestConnection(newConnection, true)} disabled={saving}>Test connection</Button>
+            <Button variant="secondary" onClick={() => handleTestConnection(newConnection, true, newMeta.id_type_db)} disabled={saving}>Test connection</Button>
             <Button onClick={handleAdd} disabled={saving}>{saving ? 'Adding...' : 'Add'}</Button>
           </div>
         </Card>

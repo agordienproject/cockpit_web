@@ -40,8 +40,8 @@ export const testDatabaseById = async (id) => {
   return resp.data;
 };
 
-export const testDatabaseConnection = async (connection) => {
-  const resp = await api.post('/databases/test-connection', { connection });
+export const testDatabaseConnection = async (connection, typeId) => {
+  const resp = await api.post('/databases/test-connection', { connection, id_type_db: typeId });
   return resp.data;
 };
 

@@ -7,6 +7,8 @@ import {
   PostgresConnectionParts,
 } from "../utils/crypto";
 import { Client } from "pg";
+import sql from "mssql";
+import mysql from "mysql2/promise";
 
 const extractConnectionParts = (encrypted: any): PostgresConnectionParts | undefined => {
   if (!encrypted) return undefined;
@@ -310,18 +312,68 @@ const convertBigIntToString = (obj: any) => {
   ));
 };
 
-export const testConnection = async (connection: PostgresConnectionParts) => {
+export const testConnection = async (connection: PostgresConnectionParts, typeId?: number | string) => {
+  console.log("Testing connection with typeId:", typeId);
   const sanitized = sanitizeConnectionInput(connection);
   if (!sanitized.password) {
     throw new Error("Password is required for connection test");
   }
-  const plainDsn = applyDefaultQueryParams(buildPostgresConnection(sanitized));
-  const client = new Client({ connectionString: plainDsn });
-  try {
-    await client.connect();
-    await client.query("SELECT 1");
-    return { ok: true };
-  } finally {
-    await client.end().catch(() => undefined);
+
+  let typeName = "PostgreSQL";
+  if (typeId) {
+    const typeRef: any = await prismaPSQL.rEF_TYPE_DB.findFirst({
+      where: { id_type_db: Number(typeId), deleted: false } as any
+    });
+    if (typeRef?.name_type_db) {
+      console.log("Found type name:", typeRef.name_type_db);
+      typeName = typeRef.name_type_db;
+    }
+  }
+
+  if (typeName === "PostgreSQL") {
+    const plainDsn = applyDefaultQueryParams(buildPostgresConnection(sanitized));
+    const client = new Client({ connectionString: plainDsn });
+    try {
+      await client.connect();
+      await client.query("SELECT 1");
+      return { ok: true };
+    } finally {
+      await client.end().catch(() => undefined);
+    }
+  } else if (typeName === "SQL Server") {
+    const config = {
+      user: sanitized.user!,
+      password: sanitized.password,
+      server: sanitized.host || 'localhost',
+      port: Number(sanitized.port) || 1433,
+      database: sanitized.database || 'master',
+      options: {
+        encrypt: false,
+        trustServerCertificate: true
+      }
+    };
+    const pool = await new sql.ConnectionPool(config).connect();
+    try {
+      await pool.request().query('SELECT 1');
+      return { ok: true };
+    } finally {
+      await pool.close();
+    }
+  } else if (typeName === "MySQL" || typeName === "MariaDB") {
+    const connection = await mysql.createConnection({
+      host: sanitized.host || 'localhost',
+      user: sanitized.user,
+      password: sanitized.password,
+      database: sanitized.database,
+      port: Number(sanitized.port) || 3306
+    });
+    try {
+      await connection.execute('SELECT 1');
+      return { ok: true };
+    } finally {
+      await connection.end();
+    }
+  } else {
+    throw new Error(`Connection test not implemented for database type: ${typeName}`);
   }
 };
