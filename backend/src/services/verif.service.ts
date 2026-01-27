@@ -98,3 +98,28 @@ export const getLatestVerifPerSystem = async () => {
 
   return Array.from(map.values());
 };
+
+// Return all verifications for a specific system
+export const getVerifsBySystemId = async (systemId: any, filters?: { startDate?: Date, endDate?: Date, status?: string }) => {
+  const where: any = { 
+    id_sys: BigInt(systemId), 
+    deleted: false 
+  };
+
+  // Apply date filters if provided
+  if (filters?.startDate || filters?.endDate) {
+    where.creation_date = {};
+    if (filters.startDate) where.creation_date.gte = filters.startDate;
+    if (filters.endDate) where.creation_date.lte = filters.endDate;
+  }
+
+  // Apply status filter if provided
+  if (filters?.status) {
+    where.status = filters.status.toUpperCase();
+  }
+
+  return await prismaPSQL.fCT_VERIF_SYSTEM.findMany({ 
+    where, 
+    orderBy: [{ creation_date: 'asc' }, { id_verif: 'asc' }] 
+  });
+};

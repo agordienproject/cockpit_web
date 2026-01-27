@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getAllSystems } from '../services/systemService';
 import { Link } from 'react-router-dom';
 
 export default function Systems() {
+  const navigate = useNavigate();
   const [systems, setSystems] = useState([]);
   const [loading, setLoading] = useState(true);
   const role = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
@@ -45,7 +47,15 @@ export default function Systems() {
                 <div className="font-semibold">{s.name_sys}</div>
                 <div className="text-sm text-gray-500">Version: {s.version_sys || '-'}</div>
               </div>
-              <Link to={`/systems/${s.id_sys}`} className="text-sm text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded">Details</Link>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate(`/systems/${s.id_sys}/verifications`)}
+                  className="text-sm text-green-600 hover:bg-green-50 px-3 py-1 rounded border border-green-300"
+                >
+                  📊 Historique
+                </button>
+                <Link to={`/systems/${s.id_sys}`} className="text-sm text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded border border-indigo-300">Détails</Link>
+              </div>
             </div>
           </div>
         ))}

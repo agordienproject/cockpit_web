@@ -9,6 +9,7 @@ const router = Router();
 // Read routes require authenticated user (role) not worker creds
 router.get("/", verifController.getAllVerifInfos);                      // Route to get all verifications
 router.get("/current", verifController.getAllCurrentVerifInfos);        // Route to get all current verifications
+router.get("/system/:systemId", verifController.getVerifsBySystem);     // Route to get verifications by system ID
 router.get("/:id", verifController.getVerifInfos);                      // Route to get verification by id
 // Write route requires worker credentials
 router.post("/", verifyWorkerCreds, verifController.createVerifInfos);                     // Route to create verification

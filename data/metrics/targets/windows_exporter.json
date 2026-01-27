@@ -4,7 +4,7 @@
       "host.docker.internal:9182"
     ],
     "labels": {
-      "machine": "HP-VICTUS",
+      "machine": "PC-Alexis",
       "os": "windows"
     }
   },

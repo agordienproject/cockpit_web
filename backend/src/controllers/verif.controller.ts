@@ -91,3 +91,24 @@ export const deleteVerifInfos = async (req: Request, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+export const getVerifsBySystem = async (req: Request, res: Response) => {
+    try {
+        const systemId = req.params.systemId;
+        const { startDate, endDate, status } = req.query;
+        
+        info('verif.getVerifsBySystem - start', { systemId, filters: { startDate, endDate, status }, user: req.user?.id });
+        
+        const filters: any = {};
+        if (startDate) filters.startDate = new Date(startDate as string);
+        if (endDate) filters.endDate = new Date(endDate as string);
+        if (status) filters.status = status as string;
+
+        const resp = await verifService.getVerifsBySystemId(systemId, filters);
+        info('verif.getVerifsBySystem - success', { systemId, count: Array.isArray(resp) ? resp.length : undefined });
+        res.status(200).json(convertBigIntToString(resp));
+    } catch (error: any) {
+        logError('verif.getVerifsBySystem - error', { error: error?.message || error });
+        res.status(500).json({ error: error.message });
+    }
+};

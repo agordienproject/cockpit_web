@@ -13,6 +13,7 @@ import AdminRefList from './pages/AdminRefList';
 import Layout from './components/Layout';
 import Systems from './pages/Systems';
 import SystemDetails from './pages/SystemDetails';
+import SystemVerificationHistory from './pages/SystemVerificationHistory';
 import Machines from './pages/Machines';
 import MachineDetails from './pages/MachineDetails';
 import Databases from './pages/Databases';
@@ -200,6 +201,14 @@ function App() {
           <ProtectedRoute>
             <Layout userRole={userRole} key={userRole}>
               <SystemDetails />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/systems/:systemId/verifications" element={
+          <ProtectedRoute>
+            <Layout userRole={userRole} key={userRole}>
+              <SystemVerificationHistory />
             </Layout>
           </ProtectedRoute>
         } />

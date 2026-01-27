@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   Title,
@@ -16,6 +17,7 @@ import {
 import { systemService, machineService, serviceService } from '../services';
 
 export default function AdminSystems() {
+  const navigate = useNavigate();
   const [systems, setSystems] = useState([]);
   const [machines, setMachines] = useState([]);
   const [types, setTypes] = useState([]);
@@ -298,9 +300,9 @@ export default function AdminSystems() {
                         <Button onClick={handleUpdate} loading={saving} disabled={saving}>Save</Button>
                       </div>
                     ) : (
-                      <div className="flex gap-2">
-                        <Button onClick={() => handleEdit(s)}>Edit</Button>
-                        <Button color="red" onClick={() => handleDelete(s)} disabled={saving}>{saving ? 'Deleting...' : 'Delete'}</Button>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button size="xs" onClick={() => handleEdit(s)}>Edit</Button>
+                        <Button size="xs" color="red" onClick={() => handleDelete(s)} disabled={saving}>{saving ? 'Deleting...' : 'Delete'}</Button>
                       </div>
                     )}
                   </TableCell>
