@@ -81,10 +81,16 @@ export const getMachineTargets = async () => {
         .map((m) => {
             const idOs = (m as any).id_os_machine;
             const osName = idOs ? osMap[String(idOs)] || '' : '';
+            
+            // Clean URL: remove protocol and path, keep only host:port
+            let cleanUrl = String(m.url_metrics_machine).trim();
+            cleanUrl = cleanUrl.replace(/^https?:\/\//i, ''); // Remove http:// or https://
+            cleanUrl = cleanUrl.replace(/\/.*$/, ''); // Remove everything after first /
+            
             return {
-                targets: [String(m.url_metrics_machine)],
+                targets: [cleanUrl],
                 labels: {
-                    instance: String(m.url_metrics_machine),
+                    instance: cleanUrl,
                     machine: String(m.name_machine || m.id_machine),
                     hostname: String(m.name_machine || m.id_machine),
                     os: (osName ? osName.toLowerCase() : ''),

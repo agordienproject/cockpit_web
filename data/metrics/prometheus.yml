@@ -29,6 +29,8 @@ scrape_configs:
         target_label: instance
       - source_labels: [machine]
         target_label: machine
+      - source_labels: [machine]
+        target_label: hostname
   # PostgreSQL metrics via postgres_exporter (multi-target support)
   - job_name: postgres
     metrics_path: /probe
